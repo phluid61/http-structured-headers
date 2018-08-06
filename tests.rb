@@ -1,6 +1,6 @@
 
 require_relative 'structured-headers'
-require_relative 'base32'
+require_relative 'libs/base32'
 
 require 'json'
 
