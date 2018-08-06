@@ -1,6 +1,7 @@
 
-require_relative 'algorismic'
-require_relative '../base32/base32'
+require_relative 'structured-headers'
+require_relative 'base32'
+
 require 'json'
 
 $total = 0
