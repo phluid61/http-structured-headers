@@ -21,29 +21,32 @@ end
 
 Dir['tests/*.json'].each do |testfile|
   json = File.read(testfile)
-  tests = JSON.parse(json, symbolize_names: true)
+  tests = JSON.parse(json)
   tests.each do |test|
     $total += 1
 
-    raw = test[:raw]
+    raw = test['raw']
     raw = raw.join(',') if raw.is_a? Array
 
     begin
-      result = StructuredHeaders.parse_header raw, test[:header_type]
+      result = StructuredHeaders.parse_header raw, test['header_type']
       result = Base32.strict_encode32 result if testfile == 'tests/binary.json'
       result = __cast__ result
     rescue => ex
-      if test[:expected]
+      if test['expected']
         puts ex.full_message(order: :bottom)
       end
       result = false
     end
 
-    if result == test[:expected]
+    if result == test['expected']
       $passed += 1
     else
       $failed += 1
-      puts "FAIL: #{test[:raw].inspect} expected #{test[:expected].inspect}, got #{result.inspect}"
+      puts "FAIL: #{test['name']}"
+      puts "  input:    #{test['raw'].inspect}"
+      puts "  expected: #{test['expected'].inspect}"
+      puts "  got:      #{result.inspect}"
     end
   end
 end
