@@ -265,7 +265,7 @@ module StructuredHeaders
         input_string.slice!(0)
         param_value = parse_item(input_string)
       end
-      parameters = [param_name, param_value]
+      parameters[param_name] = param_value
     end
     ParameterisedIdentifier.new(primary_identifier, parameters)
   end
