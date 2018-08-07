@@ -219,7 +219,7 @@ module StructuredHeaders
       raise ParseError, "repeated dictionary key #{this_key.inspect}" if dictionary.key? this_key
       raise ParseError, "dictionary missing '=' for key #{this_key.inspect}" if input_string.slice!(0) != '='
       this_value = parse_item(input_string)
-      dictionary[this_key] = [this_value]
+      dictionary[this_key] = this_value
       _discard_leading_OWS(input_string)
       return dictionary if input_string.empty?
       raise ParseError, "dictionary missing comma after #{this_key.inspect}" if input_string.slice!(0) != ','
