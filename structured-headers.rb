@@ -32,6 +32,10 @@ module StructuredHeaders
       @string = (+"#{string}").b
     end
     attr_reader :string
+
+    def to_s
+      @string.dup
+    end
   end
 
   def self::_empty_string
@@ -42,6 +46,21 @@ module StructuredHeaders
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
   SERIALISE_IDENTIFIER = /\A[a-z][a-z0-9_*\/-]*\z/
+
+  def self::serialise_header obj, type
+    case type
+    when 'dictionary'
+      serialise_dictionary(obj)
+    when 'list'
+      serialise_list(obj)
+    when 'param-list'
+      serialise_parameterised_list(obj)
+    when 'item'
+      serialise_item(obj)
+    else
+      raise "unable to serialise #{type.inspect}"
+    end
+  end
 
   def self::serialise_dictionary hsh
     output = _empty_string
@@ -111,6 +130,8 @@ module StructuredHeaders
       else
         :binary
       end
+    when BinaryContent
+      :binary
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
@@ -178,7 +199,7 @@ module StructuredHeaders
     input = input.to_s.b
     output = _empty_string
     output << '*'
-    Base64.strict_encode64(input)
+    output << Base64.strict_encode64(input)
     output << '*'
     output
   end
