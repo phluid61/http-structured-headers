@@ -13,7 +13,9 @@ def __cast__ result
   when Array
     result.map {|item| __cast__ item }
   when StructuredHeaders::ParameterisedIdentifier
-    [result.identifier, result.parameters]
+    [result.identifier, result.parameters.map{|k,v| [k, __cast__(v)] }.to_h]
+  when StructuredHeaders::BinaryContent
+    Base32.strict_encode32 result.string
   else
     result
   end
@@ -37,7 +39,6 @@ Dir['tests/*.json'].each do |testfile|
 
     begin
       result = StructuredHeaders.parse_header raw, test['header_type']
-      result = Base32.strict_encode32 result if testfile == 'tests/binary.json'
       result = __cast__ result
     rescue => ex
       if test['expected']

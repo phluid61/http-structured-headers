@@ -27,6 +27,13 @@ module StructuredHeaders
     end
   end
 
+  class BinaryContent
+    def initialize string
+      @string = (+"#{string}").b
+    end
+    attr_reader :string
+  end
+
   def self::_empty_string
     (+'').force_encoding(Encoding::ASCII)
   end
@@ -370,7 +377,7 @@ module StructuredHeaders
     input_string.slice!(0)
     raise ParseError, "invalid Base 64 characters in #{b64_content.inspect}" unless input_string =~ /\A[A-Za-z0-9+\/=]*\z/
     binary_content = Base64.strict_decode64(b64_content)
-    binary_content
+    BinaryContent.new(binary_content)
   end
 end
 
