@@ -8,8 +8,8 @@ $failed = 0
 [
   [
     'dictionary',
-      {'a'=>1, 'b'=>'B', 'c/d'=>3.14, 'e'=>"\n"},
-      'a=1, b="B", c/d=3.14, e=*Cg==*'
+      {'a'=>1, :b=>'B', 'c/d'=>3.14, 'e_f'=>"\n"},
+      'a=1, b="B", c/d=3.14, e_f=*Cg==*'
   ],
   [
     'list',
@@ -20,15 +20,15 @@ $failed = 0
     'param-list',
       [
         StructuredHeaders::ParameterisedIdentifier.new('text/html', {'charset'=>'utf-8'}),
-        StructuredHeaders::ParameterisedIdentifier.new('text/plain', {}),
-        StructuredHeaders::ParameterisedIdentifier.new('text/*', {'q'=>0.001})
+        StructuredHeaders::ParameterisedIdentifier.new('text/plain'),
+        StructuredHeaders::ParameterisedIdentifier.new('text/*', q: 0.001)
       ],
       'text/html;charset="utf-8", text/plain, text/*;q=0.001'
   ],
   [ 'item',        123,   '123' ],
-  [ 'item',       -123,  '-123' ],
-  [ 'item',        0.5,   '0.5' ],
-  [ 'item',       -0.5,  '-0.5' ],
+  [ 'item',      -0b10,    '-2' ],
+  [ 'item',       1/2r,   '0.5' ],
+  [ 'item',      -0.50,  '-0.5' ],
   [ 'item',         '',    '""' ],
   [ 'item',      'a b', '"a b"' ],
   [ 'item', "\u{1234}", '*4Yi0*'],
@@ -51,9 +51,9 @@ $failed = 0
     $passed += 1
   else
     $failed += 1
-    puts "FAIL: #{test['name']}"
-    puts "  input:    #{test['raw'].inspect}"
-    puts "  expected: #{test['expected'].inspect}"
+    puts "FAIL:"
+    puts "  input:    #{object.inspect}"
+    puts "  expected: #{expect.inspect}"
     puts "  got:      #{result.inspect}"
   end
 end
