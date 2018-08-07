@@ -10,7 +10,7 @@ module StructuredHeaders
   end
 
   class ParameterisedIdentifier
-    def initialize identifier, parameters
+    def initialize identifier, parameters={}
       @identifier = identifier
       @parameters = parameters
     end
