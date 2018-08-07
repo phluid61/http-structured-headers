@@ -8,6 +8,17 @@ $total = 0
 $passed = 0
 $failed = 0
 
+def __cast__ result
+  case result
+  when Array
+    result.map {|item| __cast__ item }
+  when StructuredHeaders::ParameterisedIdentifier
+    [result.identifier, result.parameters]
+  else
+    result
+  end
+end
+
 Dir['tests/*.json'].each do |testfile|
   json = File.read(testfile)
   tests = JSON.parse(json, symbolize_names: true)
@@ -20,6 +31,7 @@ Dir['tests/*.json'].each do |testfile|
     begin
       result = StructuredHeaders.parse_header raw, test[:header_type]
       result = Base32.strict_encode32 result if testfile == 'tests/binary.json'
+      result = __cast__ result
     rescue => ex
       if test[:expected]
         puts ex.full_message(order: :bottom)
