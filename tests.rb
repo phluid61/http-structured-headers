@@ -12,8 +12,10 @@ def __cast__ result
   case result
   when Array
     result.map {|item| __cast__ item }
+  when Hash
+    result.map {|k, v| [k, __cast__(v)] }.to_h
   when StructuredHeaders::ParameterisedIdentifier
-    [result.identifier, result.parameters.map{|k,v| [k, __cast__(v)] }.to_h]
+    [result.identifier, __cast__(result.parameters)]
   when StructuredHeaders::BinaryContent
     Base32.strict_encode32 result.string
   else
@@ -51,7 +53,7 @@ Dir['tests/*.json'].each do |testfile|
       $passed += 1
     else
       $failed += 1
-      puts "FAIL: #{test['name']}"
+      puts R("FAIL: #{test['name']}")
       puts "  input:    #{test['raw'].inspect}"
       puts "  expected: #{C(test['expected'].inspect)}"
       puts "  got:      #{R(result.inspect)}"
