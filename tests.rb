@@ -19,6 +19,13 @@ def __cast__ result
   end
 end
 
+def R(stuff) "\x1B[31m#{stuff}\x1B[0m"; end
+def G(stuff) "\x1B[32m#{stuff}\x1B[0m"; end
+def B(stuff) "\x1B[34m#{stuff}\x1B[0m"; end
+def C(stuff) "\x1B[36m#{stuff}\x1B[0m"; end
+def M(stuff) "\x1B[35m#{stuff}\x1B[0m"; end
+def Y(stuff) "\x1B[93m#{stuff}\x1B[0m"; end
+
 Dir['tests/*.json'].each do |testfile|
   json = File.read(testfile)
   tests = JSON.parse(json)
@@ -45,11 +52,11 @@ Dir['tests/*.json'].each do |testfile|
       $failed += 1
       puts "FAIL: #{test['name']}"
       puts "  input:    #{test['raw'].inspect}"
-      puts "  expected: #{test['expected'].inspect}"
-      puts "  got:      #{result.inspect}"
+      puts "  expected: #{C(test['expected'].inspect)}"
+      puts "  got:      #{R(result.inspect)}"
     end
   end
 end
 
-puts "Done: #{$total} tests: #{$passed} passed, #{$failed} failed"
+puts '', "Done: #{M($total)} tests: #{G($passed)} passed, #{R($failed)} failed"
 
