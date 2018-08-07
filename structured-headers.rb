@@ -14,7 +14,7 @@ module StructuredHeaders
       @identifier = identifier
       @parameters = parameters
     end
-    attr_reader :identifier
+    attr_reader :identifier, :parameters
 
     def each_parameter
       return enum_for(:each_parameter) unless block_given?
@@ -280,7 +280,7 @@ module StructuredHeaders
     when '*'
       parse_binary_content(input_string)
     else
-      raise ParseError, "invalid item #{input_string.length > 10 ? (input_string.slice(0,10).inspect + '...') : input_string.inspect}"
+      raise ParseError, "invalid item #{input_string.inspect}"
     end
   end
 
