@@ -407,7 +407,7 @@ module StructuredHeaders
     b64_content = input_string.slice!(0, _idx)
     input_string.slice!(0)
     raise ParseError, "invalid Base 64 characters in #{b64_content.inspect}" unless input_string =~ /\A[A-Za-z0-9+\/=]*\z/
-    binary_content = Base64.strict_decode64(b64_content)
+    binary_content = Base64.decode64(b64_content)
     ByteSequence.new(binary_content)
   end
 
