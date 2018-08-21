@@ -32,8 +32,8 @@ $failed = 0
   [ 'item',         '',    '""' ],
   [ 'item',      'a b', '"a b"' ],
   [ 'item', "\u{1234}", '*4Yi0*'],
-  [ 'item', StructuredHeaders::BinaryContent.new('hello'), '*aGVsbG8=*'],
-  [ 'item', StructuredHeaders::BinaryContent.new(''),      '**'],
+  [ 'item', StructuredHeaders::ByteSequence.new('hello'), '*aGVsbG8=*'],
+  [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
 ].each do |test|
   type, object, expect = test
   $total += 1

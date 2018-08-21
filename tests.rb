@@ -16,7 +16,7 @@ def __cast__ result
     result.map {|k, v| [k, __cast__(v)] }.to_h
   when StructuredHeaders::ParameterisedIdentifier
     [result.identifier, __cast__(result.parameters)]
-  when StructuredHeaders::BinaryContent
+  when StructuredHeaders::ByteSequence
     Base32.strict_encode32 result.string
   else
     result

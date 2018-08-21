@@ -27,7 +27,7 @@ module StructuredHeaders
     end
   end
 
-  class BinaryContent
+  class ByteSequence
     def initialize string
       @string = (+"#{string}").b
     end
@@ -128,32 +128,27 @@ module StructuredHeaders
       if item =~ SERIALISE_STRING
         :string
       else
-        :binary
+        :byte_sequence
       end
-    when BinaryContent
-      :binary
+    when ByteSequence
+      :byte_sequence
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
   end
 
   def self::serialise_item input
-    _type = _typeof(input)
-    output = _empty_string
+    _type = _typeof(input) # includes potential failure
     case _type
     when :integer
-      value = serialise_integer(input)
+      return serialise_integer(input)
     when :float
-      value = serialise_float(input)
+      return serialise_float(input)
     when :string
-      value = serialise_string(input)
-    when :binary
-      value = serialise_binary(input)
+      return serialise_string(input)
+    else
+      return serialise_byte_sequencee(input)
     end
-    ### Pull #676
-    output << value
-    ###
-    output
   end
 
   def self::serialise_integer input
@@ -195,7 +190,7 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_binary input
+  def self::serialise_byte_sequence input
     input = input.to_s.b
     output = _empty_string
     output << '*'
@@ -306,7 +301,7 @@ module StructuredHeaders
     when '"'
       parse_string(input_string)
     when '*'
-      parse_binary_content(input_string)
+      parse_byte_sequence(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
@@ -390,15 +385,15 @@ module StructuredHeaders
     output_string
   end
 
-  def self::parse_binary_content input_string
-    raise ParseError, "not binary content #{input_string.inspect}" if input_string.slice(0) != '*'
+  def self::parse_byte_sequence input_string
+    raise ParseError, "not a byte sequence #{input_string.inspect}" if input_string.slice(0) != '*'
     input_string.slice!(0)
-    raise ParseError, "unterminated binary content" unless (_idx = input_string.index('*'))
+    raise ParseError, "unterminated byte sequence" unless (_idx = input_string.index('*'))
     b64_content = input_string.slice!(0, _idx)
     input_string.slice!(0)
     raise ParseError, "invalid Base 64 characters in #{b64_content.inspect}" unless input_string =~ /\A[A-Za-z0-9+\/=]*\z/
     binary_content = Base64.strict_decode64(b64_content)
-    BinaryContent.new(binary_content)
+    ByteSequence.new(binary_content)
   end
 end
 
