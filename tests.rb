@@ -43,19 +43,19 @@ Dir['tests/*.json'].each do |testfile|
       result = StructuredHeaders.parse_header raw, test['header_type']
       result = __cast__ result
     rescue => ex
-      if test['expected']
+      if test['expected'] != false && test['or'] != false
         puts ex.full_message(order: :bottom)
       end
       result = false
     end
 
-    if result == test['expected']
+    if result == test['expected'] || result == test['or']
       $passed += 1
     else
       $failed += 1
       puts R("FAIL: #{test['name']}")
       puts "  input:    #{test['raw'].inspect}"
-      puts "  expected: #{C(test['expected'].inspect)}"
+      puts "  expected: #{C(test['expected'].inspect)}#{test.key?('or') ? (' or ' + C(test['or'].inspect)) : ''}"
       puts "  got:      #{R(result.inspect)}"
     end
   end
