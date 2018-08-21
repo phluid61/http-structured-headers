@@ -132,6 +132,8 @@ module StructuredHeaders
       end
     when ByteSequence
       :byte_sequence
+    when True, False
+      :boolean
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
@@ -141,13 +143,15 @@ module StructuredHeaders
     _type = _typeof(input) # includes potential failure
     case _type
     when :integer
-      return serialise_integer(input)
+      serialise_integer(input)
     when :float
-      return serialise_float(input)
+      serialise_float(input)
     when :string
-      return serialise_string(input)
+      serialise_string(input)
+    when :boolean
+      serialise_boolean(input)
     else
-      return serialise_byte_sequencee(input)
+      serialise_byte_sequencee(input)
     end
   end
 
@@ -178,6 +182,15 @@ module StructuredHeaders
       output << char
     end
     output << '"'
+    output
+  end
+
+  def self::serialise_boolean input
+    #raise SerialisationError if input is not boolean
+    output = _empty_string
+    output << '!'
+    output << 'T' if input
+    output << 'F' if !input
     output
   end
 
@@ -302,6 +315,8 @@ module StructuredHeaders
       parse_string(input_string)
     when '*'
       parse_byte_sequence(input_string)
+    when '!'
+      parse_boolean(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
@@ -394,6 +409,20 @@ module StructuredHeaders
     raise ParseError, "invalid Base 64 characters in #{b64_content.inspect}" unless input_string =~ /\A[A-Za-z0-9+\/=]*\z/
     binary_content = Base64.strict_decode64(b64_content)
     ByteSequence.new(binary_content)
+  end
+
+  def self::parse_boolean input_string
+    raise ParseError, "not a boolean #{input_string.inspect}" if input_string.slice(0) != '!'
+    input_string.slice!(0)
+    if input_string.slice(0).upcase == 'T'
+      input_string.slice!(0)
+      return true
+    end
+    if input_string.slice(0).upcase == 'F'
+      input_string.slice!(0)
+      return false
+    end
+    raise ParseError, "no value has matched" # !!! not a great message
   end
 end
 
