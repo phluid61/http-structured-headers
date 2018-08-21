@@ -340,28 +340,20 @@ module StructuredHeaders
         input_number << char
         type = :float
       else
-        ### Pull #675
-        #raise ParseError, "unexpected #{char.inspect} in number"
         input_string.replace(char + input_string)
         break
-        ###
       end
       raise ParseError, "integer #{input_number} is too long" if type == :integer and input_number.length > 19
       raise ParseError, "float #{input_number} is too long" if type == :float and input_number.length > 16
     end
-    ### Pull #677
     if type == :integer
-      #output_number = input_number.to_i(10)
       output_number = input_number.to_i(10) * sign
       raise ParseError, "integer #{output_number} out of range" if output_number < -9_223_372_036_854_775_808 || output_number > 9_223_372_036_854_775_807 
     else
       raise ParseError, "invalid trailing decimal point in #{input_number.inspect}" if input_number.slice(-1) == '.'
-      #output_number = input_number.to_f
       output_number = input_number.to_f * sign
     end
-    #output_number * sign
     output_number
-    ###
   end
 
   def self::parse_string input_string
