@@ -53,6 +53,12 @@ Dir['tests/*.json'].each do |testfile|
 
     if result == test['expected'] || (error && test['can_fail'])
       $passed += 1
+      if ENV['VERBOSE']
+        puts G("PASS: #{test['name']}")
+        puts "  input:    #{test['raw'].inspect}"
+        puts "  expected: #{C(test['expected'].inspect)}#{test['can_fail'] ? ' or failure' : ''}"
+        puts "  got:      #{G(result.inspect)}"
+      end
     else
       $failed += 1
       puts R("FAIL: #{test['name']}")
