@@ -42,6 +42,11 @@ module StructuredHeaders
     (+'').force_encoding(Encoding::ASCII)
   end
 
+  def self::_base64_decode64 str
+    raise ParseError, "not Base64" if str !~ /\A[A-Z0-9+\/]*=*\z/i # has to look mostly right...
+    Base64.decode64(str) # ...but we're not going to cry over it
+  end
+
   # --------------------------------------------------
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
@@ -399,7 +404,7 @@ module StructuredHeaders
     b64_content = input_string.slice!(0, _idx)
     input_string.slice!(0)
     raise ParseError, "invalid Base 64 characters in #{b64_content.inspect}" unless input_string =~ /\A[A-Za-z0-9+\/=]*\z/
-    binary_content = Base64.decode64(b64_content)
+    binary_content = _base64_decode64(b64_content)
     ByteSequence.new(binary_content)
   end
 
