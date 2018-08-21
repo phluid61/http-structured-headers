@@ -151,7 +151,7 @@ module StructuredHeaders
     when :boolean
       serialise_boolean(input)
     else
-      serialise_byte_sequencee(input)
+      serialise_byte_sequence(input)
     end
   end
 
