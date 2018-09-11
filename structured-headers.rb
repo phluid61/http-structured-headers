@@ -25,6 +25,11 @@ module StructuredHeaders
     def []= key, value
       @parameters[key] = value
     end
+
+    def to_s
+      "\#<#{self.class.name}:#{@identifier.inspect}#{@parameters.map{|k,v|"; #{k.inspect}=#{v.inspect}"}.join}>"
+    end
+    alias inspect to_s
   end
 
   class ByteSequence
@@ -35,6 +40,10 @@ module StructuredHeaders
 
     def to_s
       @string.dup
+    end
+
+    def inspect
+      "#<#{@string.inspect}>"
     end
   end
 
