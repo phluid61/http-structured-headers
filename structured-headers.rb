@@ -27,7 +27,7 @@ module StructuredHeaders
     end
 
     def to_s
-      "\#<#{self.class.name}:#{@identifier.inspect}#{@parameters.map{|k,v|"; #{k.inspect}=#{v.inspect}"}.join}>"
+      "\#<#{self.class.name}:#{@identifier.inspect}#{@parameters.map{|k,v|";#{k.inspect}=#{v.inspect}"}.join}>"
     end
     alias inspect to_s
   end
