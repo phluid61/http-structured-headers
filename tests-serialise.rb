@@ -1,5 +1,6 @@
 
 require_relative 'structured-headers'
+require_relative 'libs/colours'
 
 $total = 0
 $passed = 0
@@ -49,13 +50,19 @@ $failed = 0
 
   if result == expect
     $passed += 1
+    if ENV['VERBOSE']
+      puts G("PASS:")
+      puts "  input:    #{object.inspect}"
+      puts "  expected: #{C(expect.inspect)}"
+      puts "  got:      #{G(result.inspect)}"
+    end
   else
     $failed += 1
-    puts "FAIL:"
+    puts R("FAIL:")
     puts "  input:    #{object.inspect}"
-    puts "  expected: #{expect.inspect}"
-    puts "  got:      #{result.inspect}"
+    puts "  expected: #{C(expect.inspect)}"
+    puts "  got:      #{R(result.inspect)}"
   end
 end
 
-puts '', "Done: #{$total} tests: #{$passed} passed, #{$failed} failed"
+puts '', "Done: #{M($total)} tests: #{G($passed)} passed, #{R($failed)} failed"
