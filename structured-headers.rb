@@ -171,7 +171,7 @@ module StructuredHeaders
   end
 
   def self::serialise_item input
-    _type = _typeof(input) # includes potential failure XXX identifiers??
+    _type = _typeof(input) # includes potential failure
     case _type
     when :integer
       serialise_integer(input)
