@@ -47,6 +47,21 @@ module StructuredHeaders
     end
   end
 
+  class Identifier
+    def initialize string
+      @string = (+"#{string}").b
+    end
+    attr_reader :string
+
+    def to_s
+      @string.dup
+    end
+
+    def inspect
+      "#<#{@string.inspect}>"
+    end
+  end
+
   def self::_empty_string
     (+'').force_encoding(Encoding::ASCII)
   end
@@ -148,6 +163,8 @@ module StructuredHeaders
       :byte_sequence
     when True, False
       :boolean
+    #when Symbol, Identifier
+    #  :identifier
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
@@ -240,7 +257,7 @@ module StructuredHeaders
       input_string = input_string.map{|s| s.to_s }.join(',')
     end
     input_string = +"#{input_string}"
-    input_string = input_string.sub(LEADING_OWS, '')
+    _discard_leading_OWS input_string
     case header_type.to_s
     when 'dictionary'
       output = parse_dictionary(input_string)
@@ -251,7 +268,7 @@ module StructuredHeaders
     else
       output = parse_item(input_string)
     end
-    input_string = input_string.sub(LEADING_OWS, '')
+    _discard_leading_OWS input_string
     raise ParseError, "input_string should be empty #{input_string.inspect}" unless input_string.empty?
     output
   end
@@ -305,7 +322,6 @@ module StructuredHeaders
     primary_identifier = parse_identifier(input_string)
     parameters = {}
     loop do
-      _discard_leading_OWS(input_string)
       break if input_string.slice(0) != ';'
       input_string.slice!(0)
       _discard_leading_OWS(input_string)
@@ -332,6 +348,8 @@ module StructuredHeaders
       parse_byte_sequence(input_string)
     when '!'
       parse_boolean(input_string)
+    when /[a-z]/
+      parse_identifier(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
