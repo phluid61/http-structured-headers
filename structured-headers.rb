@@ -161,10 +161,10 @@ module StructuredHeaders
       end
     when ByteSequence
       :byte_sequence
-    when True, False
+    when true, false
       :boolean
-    #when Symbol, Identifier
-    #  :identifier
+    when Symbol, Identifier
+      :identifier
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
