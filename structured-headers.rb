@@ -154,7 +154,7 @@ module StructuredHeaders
   end
 
   def self::serialise_item input
-    _type = _typeof(input) # includes potential failure
+    _type = _typeof(input) # includes potential failure XXX identifiers??
     case _type
     when :integer
       serialise_integer(input)
@@ -162,6 +162,8 @@ module StructuredHeaders
       serialise_float(input)
     when :string
       serialise_string(input)
+    when :identifier
+      serialise_identifier(input)
     when :boolean
       serialise_boolean(input)
     else
@@ -182,7 +184,7 @@ module StructuredHeaders
     input = input.to_f
     output = _empty_string
     output << '-' if input < 0
-    output << input.abs.to_s # !!! no guidance about trailing zeroes? !!!
+    output << input.abs.to_s # !!! uh... close enough
     output
   end
 
@@ -192,25 +194,15 @@ module StructuredHeaders
     output = _empty_string
     output << '"'
     input.each_char do |char|
-      output << '"' if char == '\\' || char == '"'
+      output << '\\' if char == '\\' || char == '"'
       output << char
     end
     output << '"'
     output
   end
 
-  def self::serialise_boolean input
-    #raise SerialisationError if input is not boolean
-    output = _empty_string
-    output << '!'
-    output << 'T' if input
-    output << 'F' if !input
-    output
-  end
-
   def self::serialise_identifier input
     input = input.to_s
-    # !!! "contains characters not allowed in" should be "does not match"? !!!
     raise SerialisationError, "identifier contains invalid characters #{input.inspect}" if input !~ SERIALISE_IDENTIFIER
     output = _empty_string
     output << input
@@ -223,6 +215,15 @@ module StructuredHeaders
     output << '*'
     output << Base64.strict_encode64(input)
     output << '*'
+    output
+  end
+
+  def self::serialise_boolean input
+    #raise SerialisationError if input is not boolean
+    output = _empty_string
+    output << '!'
+    output << 'T' if input
+    output << 'F' if !input
     output
   end
 
