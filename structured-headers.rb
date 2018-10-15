@@ -1,5 +1,6 @@
 
 require 'base64'
+require 'date'
 
 module StructuredHeaders
 
@@ -165,6 +166,8 @@ module StructuredHeaders
       :boolean
     when Symbol, Identifier
       :identifier
+    when Date, DateTime, Time
+      :date
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
@@ -183,6 +186,8 @@ module StructuredHeaders
       serialise_identifier(input)
     when :boolean
       serialise_boolean(input)
+     when :date
+       serialise_date(input)
     else
       serialise_byte_sequence(input)
     end
@@ -242,6 +247,12 @@ module StructuredHeaders
     output << 'T' if input
     output << 'F' if !input
     output
+  end
+
+  # XXX
+  def self::serialise_date input
+    input = input.to_date
+    input.httpdate
   end
 
   # --------------------------------------------------
@@ -350,6 +361,8 @@ module StructuredHeaders
       parse_boolean(input_string)
     when /[a-z]/
       parse_identifier(input_string)
+    when /[SMTWF]/
+      parse_date(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
@@ -448,6 +461,25 @@ module StructuredHeaders
       return false
     end
     raise ParseError, "no value has matched" # !!! not a great message
+  end
+
+  # XXX
+  def self::parse_date input_string
+    case input_string
+    when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d\d) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d\d\d\d) (\d\d):(\d\d):(\d\d) GMT\z/
+      Date.httpdate(input_string)
+    when /\A(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d) (\d\d):(\d\d):(\d\d) GMT\z/
+      # FIXME:
+      #   Recipients of a timestamp value in rfc850-date format, which uses a
+      #   two-digit year, MUST interpret a timestamp that appears to be more
+      #   than 50 years in the future as representing the most recent year in
+      #   the past that had the same last two digits.
+      Date.strptime("#$2 #$3 #$4 #$5:#$6:#$7 +0000", '%d %b %d %H:%I:%S %z')
+    when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ((?: |\d)\d) (\d\d):(\d\d):(\d\d) (\d\d\d\d)\z/
+      Date.strptime("#$2 #$3 #$4:#$5:#$6 #$7", '%b %e %H:%I:%S')
+    else
+      raise ParseError, "unable to recognise date format #{input_string.inspect}"
+    end
   end
 end
 
