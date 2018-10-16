@@ -1,10 +1,14 @@
 
+require 'date'
+
 require_relative 'structured-headers'
 require_relative 'libs/colours'
 
 $total = 0
 $passed = 0
 $failed = 0
+
+$timestamp = DateTime.new(2018, 10, 16, 10, 22, 0)
 
 [
   [
@@ -14,8 +18,8 @@ $failed = 0
   ],
   [
     'list',
-      ['string', -0x10, 3.1400, "\t"],
-      '"string", -16, 3.14, *CQ==*'
+      ['string', -0x10, 3.1400, "\t", $timestamp, ],
+      '"string", -16, 3.14, *CQ==*, Tue, 16 Oct 2018 10:22:00 GMT'
   ],
   [
     'param-list',
@@ -38,6 +42,7 @@ $failed = 0
   [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
   [ 'item',    :foobar,  'foobar'],
   [ 'item', StructuredHeaders::Identifier.new('a_b-c3/*'), 'a_b-c3/*'],
+  [ 'item', $timestamp,  'Tue, 16 Oct 2018 10:22:00 GMT' ],
 ].each do |test|
   type, object, expect = test
   $total += 1

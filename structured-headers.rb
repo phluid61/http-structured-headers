@@ -251,7 +251,7 @@ module StructuredHeaders
 
   # XXX
   def self::serialise_date input
-    input = input.to_date
+    input = input.to_datetime
     input.httpdate
   end
 
