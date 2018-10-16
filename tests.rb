@@ -4,6 +4,7 @@ require_relative 'libs/base32'
 require_relative 'libs/colours'
 
 require 'json'
+require 'date'
 
 $total = 0
 $passed = 0
@@ -19,6 +20,9 @@ def __cast__ result
     [result.identifier, __cast__(result.parameters)]
   when StructuredHeaders::ByteSequence
     Base32.strict_encode32 result.string
+  #when Date, DateTime, Time
+  when DateTime
+    "[#{result.iso8601}]"
   else
     result
   end
