@@ -18,17 +18,17 @@ $timestamp = DateTime.new(2018, 10, 16, 10, 22, 0)
   ],
   [
     'list',
-      ['string', -0x10, 3.1400, "\t", $timestamp, ],
-      '"string", -16, 3.14, *CQ==*, Tue, 16 Oct 2018 10:22:00 GMT'
+      ['string', -0x10, 3.1400, "\t", $timestamp, :foobar, ],
+      '"string", -16, 3.14, *CQ==*, Tue, 16 Oct 2018 10:22:00 GMT, foobar'
   ],
   [
     'param-list',
       [
-        StructuredHeaders::ParameterisedIdentifier.new('text/html', {'charset'=>'utf-8'}),
+        StructuredHeaders::ParameterisedIdentifier.new('text/html', {'charset'=>:'utf-8'}),
         StructuredHeaders::ParameterisedIdentifier.new('text/plain'),
         StructuredHeaders::ParameterisedIdentifier.new('text/*', q: 0.001)
       ],
-      'text/html;charset="utf-8", text/plain, text/*;q=0.001'
+      'text/html;charset=utf-8, text/plain, text/*;q=0.001'
   ],
   [ 'item',        123,    '123' ],
   [ 'item',      -0b10,     '-2' ],
