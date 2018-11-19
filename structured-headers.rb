@@ -75,7 +75,8 @@ module StructuredHeaders
   # --------------------------------------------------
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
-  SERIALISE_IDENTIFIER = /\A[a-z][a-z0-9_*\/-]*\z/
+  SERIALISE_IDENTIFIER = /\A[a-z][a-z0-9_.:%*\/-]*\z/
+  SERIALISE_KEY        = /\A[a-z][a-z0-9_-]*\z/
 
   def self::serialise_header obj, type
     case type
@@ -92,17 +93,19 @@ module StructuredHeaders
     end
   end
 
-  def self::serialise_dictionary hsh
+  def self::serialise_dictionary input
     output = _empty_string
-    hsh.each_with_index do |member, idx|
-      member_name, member_value = member
+    input.each_with_index do |mem, _idx|
+      member_name, member_value = mem
 
-      name = serialise_identifier(member_name)
+      #name = serialise_identifier(member_name) #XXX?
+      name = serialise_key(member_name)
       output << name
       output << '='
+      #value = serialise_key(member_value) #XXX?
       value = serialise_item(member_value)
       output << value
-      if idx < (hsh.length - 1)
+      if _idx < (input.length - 1)
         output << ','
         output << ' '
       end
@@ -110,12 +113,21 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_list ary
+  def self::serialise_key input
+    input = input.to_s
+
+    raise SerialisationError, "key contains invalid characters #{input.inspect}" if input !~ SERIALISE_KEY
     output = _empty_string
-    ary.each_with_index do |mem, idx|
+    output << input
+    output
+  end
+
+  def self::serialise_list input
+    output = _empty_string
+    input.each_with_index do |mem, _idx|
       value = serialise_item(mem)
       output << value
-      if idx < (ary.length - 1)
+      if _idx < (input.length - 1)
         output << ','
         output << ' '
       end
@@ -123,24 +135,26 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_parameterised_list ary
+  def self::serialise_parameterised_list input
     output = _empty_string
-    ary.each_with_index do |member, idx|
-      id = serialise_identifier(member.identifier)
+    input.each_with_index do |mem, _idx|
+      id = serialise_identifier(mem.identifier)
       output << id
-      member.each_parameter do |parameter|
+      mem.each_parameter do |parameter|
         param_name, param_value = parameter
 
         output << ';'
-        name = serialise_identifier(param_name)
+        #name = serialise_identifier(param_name) #XXX?
+        name = serialise_key(param_name)
         output << name
         if param_value
+          #value = serialise_key(param_value) #XXX?
           value = serialise_item(param_value)
           output << '='
           output << value
         end
       end
-      if idx < (ary.length - 1)
+      if _idx < (input.length - 1)
         output << ','
         output << ' '
       end
@@ -166,8 +180,8 @@ module StructuredHeaders
       :boolean
     when Symbol, Identifier
       :identifier
-    when Date, DateTime, Time
-      :date
+    #when Date, DateTime, Time
+    #  :date
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
@@ -186,8 +200,8 @@ module StructuredHeaders
       serialise_identifier(input)
     when :boolean
       serialise_boolean(input)
-     when :date
-       serialise_date(input)
+    #when :date
+    #  serialise_date(input)
     else
       serialise_byte_sequence(input)
     end
@@ -241,19 +255,18 @@ module StructuredHeaders
   end
 
   def self::serialise_boolean input
-    #raise SerialisationError if input is not boolean
+    #raise SerialisationError if input is not boolean # everything in Ruby is boolean
     output = _empty_string
-    output << '!'
+    output << '?'
     output << 'T' if input
     output << 'F' if !input
     output
   end
 
-  # XXX
-  def self::serialise_date input
-    input = input.to_datetime
-    input.httpdate
-  end
+  #def self::serialise_date input
+  #  input = input.to_datetime
+  #  input.httpdate
+  #end
 
   # --------------------------------------------------
 
@@ -287,7 +300,7 @@ module StructuredHeaders
   def self::parse_dictionary input_string
     dictionary = {}
     until input_string.empty?
-      this_key = parse_identifier(input_string)
+      this_key = parse_key(input_string)
       raise ParseError, "repeated dictionary key #{this_key.inspect}" if dictionary.key? this_key
       raise ParseError, "dictionary missing '=' for key #{this_key.inspect}" if input_string.slice!(0) != '='
       this_value = parse_item(input_string)
@@ -299,6 +312,20 @@ module StructuredHeaders
       raise ParseError, "unexpected trailing comma in dictionary" if input_string.empty?
     end
     raise ParseError, "No structured data has been found"
+  end
+
+  def self::parse_key input_string
+    raise "key should start with lcalpha #{input_string.inspect}" if input_string.slice(0) !~ /[a-z]/
+    output_string = _empty_string
+    until input_string.empty?
+      char = input_string.slice!(0)
+      if char !~ /[a-z0-9_-]/
+        input_string.replace(char + input_string)
+        return output_string
+      end
+      output_string << char
+    end
+    output_string
   end
 
   def self::parse_list input_string
@@ -333,10 +360,11 @@ module StructuredHeaders
     primary_identifier = parse_identifier(input_string)
     parameters = {}
     loop do
+      _discard_leading_OWS(input_string)
       break if input_string.slice(0) != ';'
       input_string.slice!(0)
       _discard_leading_OWS(input_string)
-      param_name = parse_identifier(input_string)
+      param_name = parse_key(input_string)
       raise ParseError, "duplicate parameter #{param_name.inspect}" if parameters.key? param_name
       param_value = nil
       if input_string.slice(0) == '='
@@ -357,12 +385,12 @@ module StructuredHeaders
       parse_string(input_string)
     when '*'
       parse_byte_sequence(input_string)
-    when '!'
+    when '?'
       parse_boolean(input_string)
     when /[a-z]/
       parse_identifier(input_string)
-    when /[SMTWF]/
-      parse_date(input_string)
+    #when /[SMTWF]/
+    #  parse_date(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
@@ -429,7 +457,7 @@ module StructuredHeaders
     output_string = _empty_string
     until input_string.empty?
       char = input_string.slice!(0)
-      if char !~ /[a-z0-9_*\/-]/
+      if char !~ /[a-z0-9_.:%*\/-]/
         input_string.replace(char + input_string)
         return output_string
       end
@@ -463,26 +491,25 @@ module StructuredHeaders
     raise ParseError, "no value has matched" # !!! not a great message
   end
 
-  # XXX
-  def self::parse_date input_string
-    case input_string
-    when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d\d) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d\d\d\d) (\d\d):(\d\d):(\d\d) GMT/
-      datespec = input_string.slice!(0, 29)
-      DateTime.httpdate(datespec)
-    when /\A(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d) (\d\d):(\d\d):(\d\d) GMT(.*)/m
-      # FIXME:
-      #   Recipients of a timestamp value in rfc850-date format, which uses a
-      #   two-digit year, MUST interpret a timestamp that appears to be more
-      #   than 50 years in the future as representing the most recent year in
-      #   the past that had the same last two digits.
-      input_string.replace($8)
-      DateTime.strptime("#$2 #$3 #$4 #$5:#$6:#$7 +0000", '%d %b %y %H:%M:%S %z')
-    when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ((?: |\d)\d) (\d\d):(\d\d):(\d\d) (\d\d\d\d)/
-      input_string.slice!(0, 24)
-      DateTime.strptime("#$2 #$3 #$4:#$5:#$6 #$7", '%b %e %H:%M:%S %Y')
-    else
-      raise ParseError, "unable to recognise date format #{input_string.inspect}"
-    end
-  end
+  #def self::parse_date input_string
+  #  case input_string
+  #  when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d\d) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d\d\d\d) (\d\d):(\d\d):(\d\d) GMT/
+  #    datespec = input_string.slice!(0, 29)
+  #    DateTime.httpdate(datespec)
+  #  when /\A(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d) (\d\d):(\d\d):(\d\d) GMT(.*)/m
+  #    # FIXME:
+  #    #   Recipients of a timestamp value in rfc850-date format, which uses a
+  #    #   two-digit year, MUST interpret a timestamp that appears to be more
+  #    #   than 50 years in the future as representing the most recent year in
+  #    #   the past that had the same last two digits.
+  #    input_string.replace($8)
+  #    DateTime.strptime("#$2 #$3 #$4 #$5:#$6:#$7 +0000", '%d %b %y %H:%M:%S %z')
+  #  when /\A(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ((?: |\d)\d) (\d\d):(\d\d):(\d\d) (\d\d\d\d)/
+  #    input_string.slice!(0, 24)
+  #    DateTime.strptime("#$2 #$3 #$4:#$5:#$6 #$7", '%b %e %H:%M:%S %Y')
+  #  else
+  #    raise ParseError, "unable to recognise date format #{input_string.inspect}"
+  #  end
+  #end
 end
 
