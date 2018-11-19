@@ -88,7 +88,7 @@ module StructuredHeaders
     when 'item'
       serialise_item(obj)
     else
-      raise "unable to serialise #{type.inspect}"
+      raise ArgumentError, "unable to serialise #{type.inspect}"
     end
   end
 
