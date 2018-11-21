@@ -98,11 +98,9 @@ module StructuredHeaders
     input.each_with_index do |mem, _idx|
       member_name, member_value = mem
 
-      #name = serialise_identifier(member_name) #XXX?
       name = serialise_key(member_name)
       output << name
       output << '='
-      #value = serialise_key(member_value) #XXX?
       value = serialise_item(member_value)
       output << value
       if _idx < (input.length - 1)
@@ -144,11 +142,9 @@ module StructuredHeaders
         param_name, param_value = parameter
 
         output << ';'
-        #name = serialise_identifier(param_name) #XXX?
         name = serialise_key(param_name)
         output << name
         if param_value
-          #value = serialise_key(param_value) #XXX?
           value = serialise_item(param_value)
           output << '='
           output << value
@@ -478,7 +474,7 @@ module StructuredHeaders
   end
 
   def self::parse_boolean input_string
-    raise ParseError, "not a boolean #{input_string.inspect}" if input_string.slice(0) != '!'
+    raise ParseError, "not a boolean #{input_string.inspect}" if input_string.slice(0) != '?'
     input_string.slice!(0)
     if input_string.slice(0).upcase == 'T'
       input_string.slice!(0)
