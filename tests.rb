@@ -10,6 +10,9 @@ $total = 0
 $passed = 0
 $failed = 0
 
+FAILURE = Object.new
+def FAILURE.inspect() 'failure'; end
+
 def __cast__ result
   case result
   when Array
@@ -42,27 +45,33 @@ Dir['tests/*.json'].each do |testfile|
       result = __cast__ result
       error  = nil
     rescue => ex
-      if test['expected'] && !test['can_fail']
-        puts ex.full_message(order: :bottom)
-      end
-      result = false
+      puts ex.full_message(order: :bottom) unless test['must_fail'] || test['can_fail']
+      result = FAILURE
       error = ex
     end
 
-    if result == test['expected'] || (error && test['can_fail'])
+    if (!error && result == test['expected']) || (error && (test['must_fail'] || test['can_fail']))
       $passed += 1
       if ENV['VERBOSE']
         puts G("PASS: #{test['name']}")
         puts "  input:    #{test['raw'].inspect}"
-        puts "  expected: #{C(test['expected'].inspect)}#{test['can_fail'] ? ' or failure' : ''}"
-        puts "  got:      #{G(result.inspect)}"
+        if test['must_fail']
+          puts "  expected: failure"
+        else
+          puts "  expected: #{C(test['expected'].inspect)}#{test['can_fail'] ? ' or failure' : ''}"
+          puts "  got:      #{G(result.inspect)}"
+        end
       end
     else
       $failed += 1
       puts R("FAIL: #{test['name']}")
       puts "  input:    #{test['raw'].inspect}"
-      puts "  expected: #{C(test['expected'].inspect)}#{test['can_fail'] ? ' or failure' : ''}"
-      puts "  got:      #{R(result.inspect)}"
+      if test['must_fail']
+        puts "  expected: #{N!('failure')}"
+      else
+        puts "  expected: #{C!(test['expected'].inspect)}#{test['can_fail'] ? ' or failure' : ''}"
+      end
+      puts "  got:      #{R!(result.inspect)}"
     end
   end
 end
