@@ -465,11 +465,11 @@ module StructuredHeaders
   def self::parse_boolean input_string
     raise ParseError, "not a boolean #{input_string.inspect}" if input_string.slice(0) != '?'
     input_string.slice!(0)
-    if input_string.slice(0).upcase == 'T'
+    if input_string.slice(0) == 'T'
       input_string.slice!(0)
       return true
     end
-    if input_string.slice(0).upcase == 'F'
+    if input_string.slice(0) == 'F'
       input_string.slice!(0)
       return false
     end
