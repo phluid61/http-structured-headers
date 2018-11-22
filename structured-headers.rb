@@ -266,7 +266,8 @@ module StructuredHeaders
     if input_string.respond_to?(:map) && !input_string.respond_to?(:to_str)
       input_string = input_string.map{|s| s.to_s }.join(',')
     end
-    input_string = +"#{input_string}"
+    input_string = "#{input_string}".encode('US-ASCII')
+
     _discard_leading_OWS input_string
     case header_type.to_s
     when 'dictionary'
