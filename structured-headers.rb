@@ -364,7 +364,6 @@ module StructuredHeaders
   end
 
   def self::parse_item input_string
-    _discard_leading_OWS(input_string)
     case input_string.slice(0)
     when /[-0-9]/
       parse_number(input_string)
