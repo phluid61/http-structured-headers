@@ -26,6 +26,13 @@ $failed = 0
       ],
       'text/html;charset=utf-8, text/plain, text/*;q=0.001'
   ],
+  [
+    'list-list',
+      [[:a, :b],['c'],[-4, 5.6, "\n"]],
+      'a; b, "c", -4; 5.6; *Cg==*'
+  ],
+  [ 'list-list',    [],       '' ],
+  [ 'list-list',    [[],[]],     ],
   [ 'item',        123,    '123' ],
   [ 'item',      -0b10,     '-2' ],
   [ 'item',       1/2r,    '0.5' ],
@@ -37,6 +44,7 @@ $failed = 0
   [ 'item', StructuredHeaders::ByteSequence.new('hello'), '*aGVsbG8=*'],
   [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
   [ 'item',    :foobar,  'foobar'],
+  [ 'item',    :FooBar,  'FooBar'],
   [ 'item', StructuredHeaders::Identifier.new('a_b-c3/*'), 'a_b-c3/*'],
 ].each do |test|
   type, object, expect = test
@@ -56,15 +64,15 @@ $failed = 0
     if ENV['VERBOSE']
       puts G("PASS:")
       puts "  input:    #{object.inspect}"
-      puts "  expected: #{C(expect.inspect)}"
-      puts "  got:      #{G(result.inspect)}"
+      puts "  expected: #{expect ? C(expect.inspect) : Y('failure')}"
+      puts "  got:      #{result ? G(result.inspect) : Y('failure')}"
     end
   else
     $failed += 1
     puts R("FAIL:")
     puts "  input:    #{object.inspect}"
-    puts "  expected: #{C(expect.inspect)}"
-    puts "  got:      #{R(result.inspect)}"
+    puts "  expected: #{expect ? C(expect.inspect) : Y('failure')}"
+    puts "  got:      #{result ? R(result.inspect) : R('failure')}"
   end
 end
 

@@ -74,17 +74,19 @@ module StructuredHeaders
   # --------------------------------------------------
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
-  SERIALISE_IDENTIFIER = /\A[a-z][a-z0-9_.:%*\/-]*\z/
+  SERIALISE_IDENTIFIER = /\A[A-Za-z][A-Za-z0-9_.:%*\/-]*\z/
   SERIALISE_KEY        = /\A[a-z][a-z0-9_-]*\z/
 
   def self::serialise_header obj, type
     case type
     when 'dictionary'
       serialise_dictionary(obj)
-    when 'list'
-      serialise_list(obj)
     when 'param-list'
       serialise_parameterised_list(obj)
+    when 'list-list'
+      serialise_listlist(obj)
+    when 'list'
+      serialise_list(obj)
     when 'item'
       serialise_item(obj)
     else
@@ -92,9 +94,9 @@ module StructuredHeaders
     end
   end
 
-  def self::serialise_dictionary input
+  def self::serialise_dictionary input_dictionary
     output = _empty_string
-    input.each_with_index do |mem, _idx|
+    input_dictionary.each_with_index do |mem, _idx|
       member_name, member_value = mem
 
       name = serialise_key(member_name)
@@ -102,7 +104,7 @@ module StructuredHeaders
       output << '='
       value = serialise_item(member_value)
       output << value
-      if _idx < (input.length - 1)
+      if _idx < (input_dictionary.length - 1)
         output << ','
         output << ' '
       end
@@ -110,21 +112,21 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_key input
-    input = input.to_s
+  def self::serialise_key input_key
+    input_key = input_key.to_s
 
-    raise SerialisationError, "key contains invalid characters #{input.inspect}" if input !~ SERIALISE_KEY
+    raise SerialisationError, "key contains invalid characters #{input_key.inspect}" if input_key !~ SERIALISE_KEY
     output = _empty_string
-    output << input
+    output << input_key
     output
   end
 
-  def self::serialise_list input
+  def self::serialise_list input_list
     output = _empty_string
-    input.each_with_index do |mem, _idx|
+    input_list.each_with_index do |mem, _idx|
       value = serialise_item(mem)
       output << value
-      if _idx < (input.length - 1)
+      if _idx < (input_list.length - 1)
         output << ','
         output << ' '
       end
@@ -132,9 +134,30 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_parameterised_list input
+  def self::serialise_listlist input_list
     output = _empty_string
-    input.each_with_index do |mem, _idx|
+    input_list.each_with_index do |inner_list, _idx|
+      raise SerialisationError, "inner_list is not a list #{inner_list.inspect}" unless inner_list.respond_to? :each_with_index
+      #XXX doesn't fail if inner_list is empty?
+      inner_list.each_with_index do |inner_mem, _inner_idx|
+        value = serialise_item(inner_mem)
+        output << value
+        if _inner_idx < (inner_list.length - 1)
+          output << ';'
+          output << ' '
+        end
+      end
+      if _idx < (input_list.length - 1)
+        output << ','
+        output << ' '
+      end
+    end
+    output
+  end
+
+  def self::serialise_parameterised_list input_plist
+    output = _empty_string
+    input_plist.each_with_index do |mem, _idx|
       id = serialise_identifier(mem.identifier)
       output << id
       mem.each_parameter do |parameter|
@@ -149,7 +172,7 @@ module StructuredHeaders
           output << value
         end
       end
-      if _idx < (input.length - 1)
+      if _idx < (input_plist.length - 1)
         output << ','
         output << ' '
       end
@@ -175,52 +198,53 @@ module StructuredHeaders
       :boolean
     when Symbol, Identifier
       :identifier
+    end
+  end
+
+  def self::serialise_item input_item
+    _type = _typeof(input_item) # defaults to 'nil'
+    case _type
+    when :integer
+      serialise_integer(input_item)
+    when :float
+      serialise_float(input_item)
+    when :string
+      serialise_string(input_item)
+    when :identifier
+      serialise_identifier(input_item)
+    when :boolean
+      serialise_boolean(input_item)
+    when :byte_sequence
+      serialise_byte_sequence(input_item)
     else
       raise SerialisationError, "not a valid 'item' type: #{item.class.name}"
     end
   end
 
-  def self::serialise_item input
-    _type = _typeof(input) # includes potential failure
-    case _type
-    when :integer
-      serialise_integer(input)
-    when :float
-      serialise_float(input)
-    when :string
-      serialise_string(input)
-    when :identifier
-      serialise_identifier(input)
-    when :boolean
-      serialise_boolean(input)
-    else
-      serialise_byte_sequence(input)
-    end
-  end
-
-  def self::serialise_integer input
-    input = input.to_i
-    raise SerialisationError, "integer #{input.inspect} out of bounds" if input < -9_223_372_036_854_775_808 || input > 9_223_372_036_854_775_807
+  def self::serialise_integer input_integer
+    input_integer = input_integer.to_i
+    raise SerialisationError, "integer #{input_integer.inspect} out of bounds" if input_integer < -9_223_372_036_854_775_808 || input_integer > 9_223_372_036_854_775_807
     output = _empty_string
-    output << '-' if input < 0
-    output << input.abs.to_s(10)
+    output << '-' if input_integer < 0
+    output << input_integer.abs.to_s(10)
     output
   end
 
-  def self::serialise_float input
-    input = input.to_f
+  def self::serialise_float input_float
+    input_float = input_float.to_f
     output = _empty_string
-    output << '-' if input < 0
-    output << input.abs.to_s # !!! uh... close enough
+    output << '-' if input_float < 0
+    output << input_float.abs.to_s # !!! uh... close enough
     output
   end
 
-  def self::serialise_string input
-    input = input.to_s
-    raise SerialisationError, "string contains invalid characters #{input.inspect}" if input !~ SERIALISE_STRING
+  def self::serialise_string input_string
+    input_string = input_string.to_s
+
+    raise SerialisationError, "string contains invalid characters #{input_string.inspect}" if input_string !~ SERIALISE_STRING # FIXME: this literally says "VCHAR or SP"
     output = _empty_string
     output << '"'
-    input.each_char do |char|
+    input_string.each_char do |char|
       output << '\\' if char == '\\' || char == '"'
       output << char
     end
@@ -228,19 +252,21 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_identifier input
-    input = input.to_s
-    raise SerialisationError, "identifier contains invalid characters #{input.inspect}" if input !~ SERIALISE_IDENTIFIER
+  def self::serialise_identifier input_identifier
+    input_identifier = input_identifier.to_s
+
+    raise SerialisationError, "identifier contains invalid characters #{input_identifier.inspect}" if input_identifier !~ SERIALISE_IDENTIFIER
     output = _empty_string
-    output << input
+    output << input_identifier
     output
   end
 
-  def self::serialise_byte_sequence input
-    input = input.to_s.b
+  def self::serialise_byte_sequence input_bytes
+    input_bytes = input_bytes.to_s.b
+
     output = _empty_string
     output << '*'
-    output << Base64.strict_encode64(input)
+    output << Base64.strict_encode64(input_bytes)
     output << '*'
     output
   end
@@ -263,7 +289,7 @@ module StructuredHeaders
   end
 
   def self::parse_header input_string, header_type
-    if input_string.respond_to?(:map) && !input_string.respond_to?(:to_str)
+    if !input_string.respond_to?(:to_str) && input_string.respond_to?(:map)
       input_string = input_string.map{|s| s.to_s }.join(',')
     end
     input_string = "#{input_string}".encode('US-ASCII')
@@ -274,10 +300,13 @@ module StructuredHeaders
       output = parse_dictionary(input_string)
     when 'list'
       output = parse_list(input_string)
+    when 'list-list'
+      output = parse_listlist(input_string)
     when 'param-list'
       output = parse_parameterised_list(input_string)
-    else
+    when 'item'
       output = parse_item(input_string)
+    #XXX doesn't warn/error on bad header_type
     end
     _discard_leading_OWS input_string
     raise ParseError, "input_string should be empty #{input_string.inspect}" unless input_string.empty?
@@ -329,6 +358,30 @@ module StructuredHeaders
     raise ParseError, "No structured data has been found"
   end
 
+  def self::parse_listlist input_string
+    top_list = []
+    inner_list = []
+    until input_string.empty?
+      item = parse_item(input_string)
+      inner_list << item
+      _discard_leading_OWS(input_string)
+      if input_string.empty?
+        top_list << inner_list
+        return top_list
+      end
+      char = input_string.slice!(0)
+      if char == ','
+        top_list << inner_list
+        inner_list = []
+      elsif char != ';'
+        raise ParseError, "list missing semicolon after #{item.inspect}"
+      end
+      _discard_leading_OWS(input_string)
+      raise ParseError, "unexpected trailing separator in list" if input_string.empty?
+    end
+    raise ParseError, "No structured data has been found"
+  end
+
   def self::parse_parameterised_list input_string
     items = []
     until input_string.empty?
@@ -373,7 +426,7 @@ module StructuredHeaders
       parse_byte_sequence(input_string)
     when '?'
       parse_boolean(input_string)
-    when /[a-z]/
+    when /[A-Za-z]/
       parse_identifier(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
@@ -406,7 +459,7 @@ module StructuredHeaders
     end
     if type == :integer
       output_number = input_number.to_i(10) * sign
-      raise ParseError, "integer #{output_number} out of range" if output_number < -9_223_372_036_854_775_808 || output_number > 9_223_372_036_854_775_807 
+      raise ParseError, "integer #{output_number} out of range" if output_number < -9_223_372_036_854_775_808 || output_number > 9_223_372_036_854_775_807
     else
       raise ParseError, "invalid trailing decimal point in #{input_number.inspect}" if input_number.slice(-1) == '.'
       output_number = input_number.to_f * sign
@@ -422,6 +475,7 @@ module StructuredHeaders
       char = input_string.slice!(0)
       if char == '\\'
         raise ParseError, "unterminated string" if input_string.empty?
+        #else:
         next_char = input_string.slice!(0)
         raise ParseError, "invalid escape sequence" if next_char != '"' && next_char != '\\'
         output_string << next_char
@@ -433,15 +487,15 @@ module StructuredHeaders
         output_string << char
       end
     end
-    raise ParseError, "unterminated string"
+    raise ParseError, "Reached the end of input_string without finding a closing DQUOTE"
   end
 
   def self::parse_identifier input_string
-    raise ParseError, "not an identifier #{input_string.inspect}" if input_string.slice(0) !~ /[a-z]/
+    raise ParseError, "not an identifier #{input_string.inspect}" if input_string.slice(0) !~ /[A-Za-z]/
     output_string = _empty_string
     until input_string.empty?
       char = input_string.slice!(0)
-      if char !~ /[a-z0-9_.:%*\/-]/
+      if char !~ /[A-Za-z0-9_.:%*\/-]/
         input_string.replace(char + input_string)
         return output_string
       end
