@@ -1,6 +1,4 @@
 
-require 'date'
-
 require_relative 'structured-headers'
 require_relative 'libs/colours'
 
@@ -8,20 +6,14 @@ $total = 0
 $passed = 0
 $failed = 0
 
-$timestamp = DateTime.new(2018, 10, 16, 10, 22, 0)
-
 [
   [
     'dictionary',
-      #{'a'=>1, :b=>'B', 'c/d'=>3.14, 'e_f'=>"\n"},
-      #'a=1, b="B", c/d=3.14, e_f=*Cg==*'
       {'a'=>1, :b=>'B', 'c-d'=>3.14, 'e_f'=>"\n"},
       'a=1, b="B", c-d=3.14, e_f=*Cg==*'
   ],
   [
     'list',
-      #['string', -0x10, 3.1400, "\t", $timestamp, :foobar, ],
-      #'"string", -16, 3.14, *CQ==*, Tue, 16 Oct 2018 10:22:00 GMT, foobar'
       ['string', -0x10, 3.1400, "\t", :foobar, ],
       '"string", -16, 3.14, *CQ==*, foobar'
   ],
@@ -46,7 +38,6 @@ $timestamp = DateTime.new(2018, 10, 16, 10, 22, 0)
   [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
   [ 'item',    :foobar,  'foobar'],
   [ 'item', StructuredHeaders::Identifier.new('a_b-c3/*'), 'a_b-c3/*'],
-  #[ 'item', $timestamp,  'Tue, 16 Oct 2018 10:22:00 GMT' ],
 ].each do |test|
   type, object, expect = test
   $total += 1
