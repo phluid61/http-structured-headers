@@ -138,7 +138,7 @@ module StructuredHeaders
     output = _empty_string
     input_list.each_with_index do |inner_list, _idx|
       raise SerialisationError, "inner_list is not a list #{inner_list.inspect}" unless inner_list.respond_to? :each_with_index
-      #XXX doesn't fail if inner_list is empty?
+      raise SerialisationError, "inner_list is empty" if inner_list.empty?
       inner_list.each_with_index do |inner_mem, _inner_idx|
         value = serialise_item(inner_mem)
         output << value
