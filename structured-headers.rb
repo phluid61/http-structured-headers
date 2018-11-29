@@ -10,11 +10,11 @@ module StructuredHeaders
   end
 
   class ParameterisedIdentifier
-    def initialize identifier, parameters={}
-      @identifier = identifier
+    def initialize token, parameters={}
+      @token = token
       @parameters = parameters
     end
-    attr_reader :identifier, :parameters
+    attr_reader :token, :parameters
 
     def each_parameter
       return enum_for(:each_parameter) unless block_given?
@@ -27,7 +27,7 @@ module StructuredHeaders
     end
 
     def to_s
-      "\#<#{self.class.name}:#{@identifier.inspect}#{@parameters.map{|k,v|";#{k.inspect}=#{v.inspect}"}.join}>"
+      "\#<#{self.class.name}:#{@token.inspect}#{@parameters.map{|k,v|";#{k.inspect}=#{v.inspect}"}.join}>"
     end
     alias inspect to_s
   end
@@ -74,7 +74,7 @@ module StructuredHeaders
   # --------------------------------------------------
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
-  SERIALISE_IDENTIFIER = /\A[A-Za-z][A-Za-z0-9_.:%*\/-]*\z/
+  SERIALISE_TOKEN = /\A[A-Za-z][A-Za-z0-9_.:%*\/-]*\z/
   SERIALISE_KEY        = /\A[a-z][a-z0-9_-]*\z/
 
   def self::serialise_header obj, type
@@ -158,7 +158,7 @@ module StructuredHeaders
   def self::serialise_parameterised_list input_plist
     output = _empty_string
     input_plist.each_with_index do |mem, _idx|
-      id = serialise_identifier(mem.identifier)
+      id = serialise_token(mem.token)
       output << id
       mem.each_parameter do |parameter|
         param_name, param_value = parameter
@@ -197,7 +197,7 @@ module StructuredHeaders
     when true, false
       :boolean
     when Symbol, Identifier
-      :identifier
+      :token
     end
   end
 
@@ -210,8 +210,8 @@ module StructuredHeaders
       serialise_float(input_item)
     when :string
       serialise_string(input_item)
-    when :identifier
-      serialise_identifier(input_item)
+    when :token
+      serialise_token(input_item)
     when :boolean
       serialise_boolean(input_item)
     when :byte_sequence
@@ -252,12 +252,12 @@ module StructuredHeaders
     output
   end
 
-  def self::serialise_identifier input_identifier
-    input_identifier = input_identifier.to_s
+  def self::serialise_token input_token
+    input_token = input_token.to_s
 
-    raise SerialisationError, "identifier contains invalid characters #{input_identifier.inspect}" if input_identifier !~ SERIALISE_IDENTIFIER
+    raise SerialisationError, "token contains invalid characters #{input_token.inspect}" if input_token !~ SERIALISE_TOKEN
     output = _empty_string
-    output << input_identifier
+    output << input_token
     output
   end
 
@@ -385,7 +385,7 @@ module StructuredHeaders
   def self::parse_parameterised_list input_string
     items = []
     until input_string.empty?
-      item = parse_parameterised_identifier(input_string)
+      item = parse_parameterised_token(input_string)
       items << item
       _discard_leading_OWS(input_string)
       return items if input_string.empty?
@@ -396,8 +396,8 @@ module StructuredHeaders
     raise ParseError, "No structured data has been found"
   end
 
-  def self::parse_parameterised_identifier input_string
-    primary_identifier = parse_identifier(input_string)
+  def self::parse_parameterised_token input_string
+    primary_token = parse_token(input_string)
     parameters = {}
     loop do
       _discard_leading_OWS(input_string)
@@ -413,7 +413,7 @@ module StructuredHeaders
       end
       parameters[param_name] = param_value
     end
-    ParameterisedIdentifier.new(primary_identifier, parameters)
+    ParameterisedIdentifier.new(primary_token, parameters)
   end
 
   def self::parse_item input_string
@@ -427,7 +427,7 @@ module StructuredHeaders
     when '?'
       parse_boolean(input_string)
     when /[A-Za-z]/
-      parse_identifier(input_string)
+      parse_token(input_string)
     else
       raise ParseError, "invalid item #{input_string.inspect}"
     end
@@ -490,8 +490,8 @@ module StructuredHeaders
     raise ParseError, "Reached the end of input_string without finding a closing DQUOTE"
   end
 
-  def self::parse_identifier input_string
-    raise ParseError, "not an identifier #{input_string.inspect}" if input_string.slice(0) !~ /[A-Za-z]/
+  def self::parse_token input_string
+    raise ParseError, "not an token #{input_string.inspect}" if input_string.slice(0) !~ /[A-Za-z]/
     output_string = _empty_string
     until input_string.empty?
       char = input_string.slice!(0)
