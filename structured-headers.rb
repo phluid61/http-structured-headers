@@ -275,8 +275,8 @@ module StructuredHeaders
     #raise SerialisationError if input is not boolean # everything in Ruby is boolean
     output = _empty_string
     output << '?'
-    output << 'T' if input
-    output << 'F' if !input
+    output << '1' if input
+    output << '0' if !input
     output
   end
 
@@ -518,11 +518,11 @@ module StructuredHeaders
   def self::parse_boolean input_string
     raise ParseError, "not a boolean #{input_string.inspect}" if input_string.slice(0) != '?'
     input_string.slice!(0)
-    if input_string.slice(0) == 'T'
+    if input_string.slice(0) == '1'
       input_string.slice!(0)
       return true
     end
-    if input_string.slice(0) == 'F'
+    if input_string.slice(0) == '0'
       input_string.slice!(0)
       return false
     end
