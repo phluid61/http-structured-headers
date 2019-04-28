@@ -20,7 +20,9 @@ def __cast__ result
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
   when StructuredHeaders::ParameterisedToken
-    [result.token, __cast__(result.parameters)]
+    [__cast__(result.token), __cast__(result.parameters)]
+  when StructuredHeaders::Token, Symbol
+    result.to_s
   when StructuredHeaders::ByteSequence
     Base32.strict_encode32 result.string
   #when Date, DateTime, Time
