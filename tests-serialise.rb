@@ -20,9 +20,9 @@ $failed = 0
   [
     'param-list',
       [
-        StructuredHeaders::ParameterisedIdentifier.new('text/html', {'charset'=>:'utf-8'}),
-        StructuredHeaders::ParameterisedIdentifier.new('text/plain'),
-        StructuredHeaders::ParameterisedIdentifier.new('text/*', q: 0.001)
+        StructuredHeaders::ParameterisedToken.new('text/html', {'charset'=>:'utf-8'}),
+        StructuredHeaders::ParameterisedToken.new('text/plain'),
+        StructuredHeaders::ParameterisedToken.new('text/*', q: 0.001)
       ],
       'text/html;charset=utf-8, text/plain, text/*;q=0.001'
   ],
@@ -45,7 +45,7 @@ $failed = 0
   [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
   [ 'item',    :foobar,  'foobar'],
   [ 'item',    :FooBar,  'FooBar'],
-  [ 'item', StructuredHeaders::Identifier.new('a_b-c3/*'), 'a_b-c3/*'],
+  [ 'item', StructuredHeaders::Token.new('a_b-c3/*'), 'a_b-c3/*'],
 ].each do |test|
   type, object, expect = test
   $total += 1

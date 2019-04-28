@@ -9,7 +9,7 @@ module StructuredHeaders
   class ParseError < RuntimeError
   end
 
-  class ParameterisedIdentifier
+  class ParameterisedToken
     def initialize token, parameters={}
       @token = token
       @parameters = parameters
@@ -47,7 +47,7 @@ module StructuredHeaders
     end
   end
 
-  class Identifier
+  class Token
     def initialize string
       @string = (+"#{string}").b
     end
@@ -196,7 +196,7 @@ module StructuredHeaders
       :byte_sequence
     when true, false
       :boolean
-    when Symbol, Identifier
+    when Symbol, Token
       :token
     end
   end
@@ -413,7 +413,7 @@ module StructuredHeaders
       end
       parameters[param_name] = param_value
     end
-    ParameterisedIdentifier.new(primary_token, parameters)
+    ParameterisedToken.new(primary_token, parameters)
   end
 
   def self::parse_item input_string

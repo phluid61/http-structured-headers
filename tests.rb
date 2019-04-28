@@ -19,7 +19,7 @@ def __cast__ result
     result.map {|item| __cast__ item }
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
-  when StructuredHeaders::ParameterisedIdentifier
+  when StructuredHeaders::ParameterisedToken
     [result.token, __cast__(result.parameters)]
   when StructuredHeaders::ByteSequence
     Base32.strict_encode32 result.string
