@@ -501,7 +501,7 @@ module StructuredHeaders
       end
       output_string << char
     end
-    output_string.to_sym
+    Token.new(output_string)
   end
 
   def self::parse_byte_sequence input_string
