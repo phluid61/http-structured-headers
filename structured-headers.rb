@@ -74,8 +74,8 @@ module StructuredHeaders
   # --------------------------------------------------
 
   SERIALISE_STRING = /\A([\x20-\x5B]|[\x5D-\x7E]|\\")*\z/
-  SERIALISE_TOKEN = /\A[A-Za-z][A-Za-z0-9_.:%*\/-]*\z/
-  SERIALISE_KEY        = /\A[a-z][a-z0-9_-]*\z/
+  SERIALISE_TOKEN  = /\A[A-Za-z][A-Za-z0-9_.:%*\/-]*\z/
+  SERIALISE_KEY    = /\A[a-z][a-z0-9_-]*\z/
 
   def self::serialise_header obj, type
     case type
