@@ -491,7 +491,7 @@ module StructuredHeaders
   end
 
   def self::parse_token input_string
-    raise ParseError, "not an token #{input_string.inspect}" if input_string.slice(0) !~ /[A-Za-z]/
+    raise ParseError, "not a token #{input_string.inspect}" if input_string.slice(0) !~ /[A-Za-z]/
     output_string = _empty_string
     until input_string.empty?
       char = input_string.slice!(0)
