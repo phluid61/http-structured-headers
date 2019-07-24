@@ -3,6 +3,8 @@ require 'base64'
 
 module StructuredHeaders
 
+  SPEC_VERSION = '-09'
+
   class SerialisationError < RuntimeError
   end
 
