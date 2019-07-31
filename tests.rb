@@ -19,8 +19,8 @@ def __cast__ result
     result.map {|item| __cast__ item }
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
-  when StructuredHeaders::ParameterisedToken
-    [__cast__(result.token), __cast__(result.parameters)]
+#  when StructuredHeaders::ParameterisedToken
+#    [__cast__(result.token), __cast__(result.parameters)]
   when StructuredHeaders::Token, Symbol
     result.to_s
   when StructuredHeaders::ByteSequence
@@ -42,8 +42,11 @@ Dir['tests/*.json'].each do |testfile|
     raw = test['raw']
     raw = raw.join(',') if raw.is_a? Array
 
+    header_type = test['header_type']
+    header_type = 'list' if header_type == 'param-list'
+
     begin
-      result = StructuredHeaders.parse_header raw, test['header_type']
+      result = SH::Parser.parse raw, header_type
       result = __cast__ result
       error  = nil
     rescue => ex
