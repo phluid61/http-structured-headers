@@ -120,7 +120,7 @@ else
       output_string = _empty_string
       while !input_string.empty?
         char = input_string.slice!(0)
-        if char !~ /\A[a-z0-9_-]/
+        if char !~ /\A[a-z0-9*_-]/
           input_string.replace(char + input_string)
           return output_string
         end
