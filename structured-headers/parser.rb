@@ -32,8 +32,8 @@ module StructuredHeaders
         output = parse_dictionary(input_string)
       when 'item', :item
         output = parse_item(input_string)
-else
-  raise SH::ParseError, "parse: stupid type #{header_type.inspect}"
+      #else
+      #  raise SH::ParseError, "parse: unrecognised type #{header_type.inspect}"
       end
       _discard_leading_OWS(input_string)
       raise SH::ParseError, "parse: input_string is not empty: #{input_string.inspect}" unless input_string.empty?
@@ -100,12 +100,8 @@ else
         this_key = parse_key(input_string)
         raise SH::ParseError, "parse_dictionary: duplicate key #{this_key.inspect}" if dictionary.key? this_key
         raise SH::ParseError, "parse_dictionary: expected '=' after key" if input_string.slice!(0) != '='
-        if input_string.slice(0) == '('
-          this_value = parse_inner_list(input_string)
-        else
-          this_value = parse_item(input_string)
-        end
-        dictionary[this_key] = this_value
+        member = parse_parameterized_member(input_string)
+        dictionary[this_key] = member
         _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
         raise SH::ParseError, "parse_dictionary: expected ',' after value" if input_string.slice!(0) != ','
@@ -175,6 +171,7 @@ else
         raise SH::ParseError, "parse_number: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
         raise SH::ParseError, "parse_number: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
+        raise SH::ParseError, "parse_number: too many digits after decimal point in #{input_numer}" if input_number =~ /\.\d{7}/
         output_number = input_number.to_f * sign
       end
       output_number
@@ -187,10 +184,13 @@ else
       while !input_string.empty?
         char = input_string.slice!(0)
         if char == '\\'
-          raise SH::ParseError, "parse_string: unterminated string" if input_string.empty?
-          next_char = input_string.slice!(0)
-          raise SH::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
-          output_string << next_char
+          if input_string.empty?
+            raise SH::ParseError, "parse_string: unterminated string"
+          else
+            next_char = input_string.slice!(0)
+            raise SH::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
+            output_string << next_char
+          end
         elsif char == '"'
           return output_string
         elsif char =~ /\A[\x00-\x1F\x7F]/
