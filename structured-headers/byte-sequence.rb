@@ -1,8 +1,8 @@
 
-require_relative 'core'
-
 module StructuredHeaders
   class ByteSequence
+    include SH::Item
+
     def initialize string
       @string = (+"#{string}").b
     end

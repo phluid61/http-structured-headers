@@ -6,33 +6,34 @@ $total = 0
 $passed = 0
 $failed = 0
 
+$paramlist = SH::List.new
+$paramlist.append(SH::Token.new('text/html'), {'charset'=>:'utf-8'})
+$paramlist.append(SH::Token.new('text/plain'))
+$paramlist.append(SH::Token.new('text/*'), {q: 0.001})
+
 [
   [
     'dictionary',
-      {'a'=>1, :b=>'B', 'c-d'=>3.14, 'e_f'=>"\n"},
+      SH::Dictionary.new({'a'=>1, :b=>'B', 'c-d'=>3.14, 'e_f'=>"\n"}),
       'a=1, b="B", c-d=3.14, e_f=*Cg==*'
   ],
   [
     'list',
-      ['string', -0x10, 3.1400, "\t", :foobar, ],
+      SH::List.new(['string', -0x10, 3.1400, "\t", :foobar, ]),
       '"string", -16, 3.14, *CQ==*, foobar'
   ],
   [
-    'param-list',
-      [
-        StructuredHeaders::ParameterisedToken.new('text/html', {'charset'=>:'utf-8'}),
-        StructuredHeaders::ParameterisedToken.new('text/plain'),
-        StructuredHeaders::ParameterisedToken.new('text/*', q: 0.001)
-      ],
+    'list',
+      $paramlist,
       'text/html;charset=utf-8, text/plain, text/*;q=0.001'
   ],
   [
-    'list-list',
+    'list',
       [[:a, :b],['c'],[-4, 5.6, "\n"]],
-      'a; b, "c", -4; 5.6; *Cg==*'
+      '(a b ), ("c" ), (-4 5.6 *Cg==* )'
   ],
-  [ 'list-list',    [],       '' ],
-  [ 'list-list',    [[],[]],     ],
+  [ 'list',         [],       nil ],
+  [ 'list',         [[],[]],  '(), ()' ],
   [ 'item',        123,    '123' ],
   [ 'item',      -0b10,     '-2' ],
   [ 'item',       1/2r,    '0.5' ],
@@ -51,7 +52,7 @@ $failed = 0
   $total += 1
 
   begin
-    result = StructuredHeaders.serialise_header object, type
+    result = StructuredHeaders::Serializer.serialize object
   rescue => ex
     if expect
       puts ex.full_message(order: :bottom)

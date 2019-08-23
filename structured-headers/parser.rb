@@ -1,5 +1,4 @@
 
-require_relative 'core'
 require 'base64'
 
 module StructuredHeaders
@@ -9,10 +8,6 @@ module StructuredHeaders
 
     def self::_discard_leading_OWS input_string
       input_string.sub!(LEADING_OWS, '')
-    end
-
-    def self::_empty_string
-      (+'').force_encoding(Encoding::US_ASCII)
     end
 
     def self::_bytes_to_string bytes
@@ -140,7 +135,7 @@ module StructuredHeaders
     #
     def self::parse_key input_string
       raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
-      output_string = _empty_string
+      output_string = SH::empty_string
       while !input_string.empty?
         char = input_string.slice!(0)
         if char !~ /\A[a-z0-9*_-]/
@@ -183,7 +178,7 @@ module StructuredHeaders
     def self::parse_number input_string
       type = :integer
       sign = 1
-      input_number = _empty_string
+      input_number = SH::empty_string
       if input_string.slice(0) == '-'
         input_string.slice!(0)
         sign = -1
@@ -220,7 +215,7 @@ module StructuredHeaders
     # input_string is modified to remove the parsed value.
     #
     def self::parse_string input_string
-      output_string = _empty_string
+      output_string = SH::empty_string
       raise SH::ParseError, "parse_string: missing open '\"'" if input_string.slice(0) != '"'
       input_string.slice!(0)
       while !input_string.empty?
@@ -250,7 +245,7 @@ module StructuredHeaders
     #
     def self::parse_token input_string
       raise SH::ParseError, "parse_token: first character not ALPHA #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z]/
-      output_string = _empty_string
+      output_string = SH::empty_string
       while !input_string.empty?
         char = input_string.slice!(0)
         if char !~ /\A[A-Za-z0-9_\-.:%*\/]/
