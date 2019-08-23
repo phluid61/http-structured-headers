@@ -4,7 +4,7 @@ require_relative 'libs/base32'
 require_relative 'libs/colours'
 
 require 'json'
-require 'date'
+#require 'date'
 
 $total = 0
 $passed = 0
@@ -19,15 +19,13 @@ def __cast__ result
     result.map {|item| __cast__ item }
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
-#  when StructuredHeaders::ParameterisedToken
-#    [__cast__(result.token), __cast__(result.parameters)]
   when StructuredHeaders::Token, Symbol
     result.to_s
   when StructuredHeaders::ByteSequence
     Base32.strict_encode32 result.string
-  #when Date, DateTime, Time
-  when DateTime
-    "[#{result.iso8601}]"
+#  #when Date, DateTime, Time
+#  when DateTime
+#    "[#{result.iso8601}]"
   else
     result
   end
