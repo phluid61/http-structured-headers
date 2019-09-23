@@ -85,10 +85,11 @@ module StructuredHeaders
     end
 
     def self::serialize_key input_key
+      input_key = SH::Key.new(input_key).value
       # if input_key is not a sequence of characters, or contains characters not in lcalpha,
       # DIGIT, "*", "_", or "-", fail serialization -- impossible if it's an SH::Key
       output = SH::empty_string
-      output << input_key.value
+      output << input_key
       output
     end
 
