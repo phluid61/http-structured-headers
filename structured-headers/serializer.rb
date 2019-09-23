@@ -63,9 +63,9 @@ module StructuredHeaders
 
     def self::serialize_inner_list inner_list
       output = (+'(').force_encoding(Encoding::US_ASCII)
-      inner_list.each_member do |member_value|
+      inner_list.each_member.with_index do |member_value, idx|
         output << serialize_item(member_value)
-        output << WS unless inner_list.empty?
+        output << WS if idx < (inner_list.length - 1)
       end
       output << ')'.b
       output
