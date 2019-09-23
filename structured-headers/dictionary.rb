@@ -14,6 +14,11 @@ module StructuredHeaders
       @hash.empty?
     end
 
+    def key? k
+      @hash.each_key {|j| return true if j.to_s == k }
+      false
+    end
+
     def []= member_name, member_value
       set member_name, member_value
     end
