@@ -15,13 +15,23 @@ def FAILURE.inspect() 'failure'; end
 
 def __cast__ result
   case result
-  when Array
+  when SH::List
+    result.map {|(item, params)| [__cast__(item), __cast__(params)] }
+  when SH::InnerList, Array
     result.map {|item| __cast__ item }
+  when SH::Dictionary
+    result.map {|(k, v, p)| [__cast__(k), [__cast__(v), __cast__(p)]] }.to_h
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
-  when StructuredHeaders::Token, Symbol
+  when SH::Integer
+    result.to_i
+  when SH::Float
+    result.to_f
+  when SH::Boolean
+    result.bool
+  when SH::String, SH::Token, SH::Key, Symbol
     result.to_s
-  when StructuredHeaders::ByteSequence
+  when SH::ByteSequence
     Base32.strict_encode32 result.string
 #  #when Date, DateTime, Time
 #  when DateTime

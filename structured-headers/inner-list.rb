@@ -1,6 +1,8 @@
 
 module StructuredHeaders
   class InnerList
+    include Enumerable
+
     def initialize arr=[]
       @array = []
       arr.each {|v| append v }

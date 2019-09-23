@@ -18,7 +18,6 @@ module StructuredHeaders
       @integer_part_s = $1
       @fractional_part_s = $2
     end
-    attr_reader :float
     attr_reader :integer_part_s, :fractional_part_s
 
     def < oth
@@ -31,6 +30,10 @@ module StructuredHeaders
 
     def to_r
       @rat
+    end
+
+    def to_f
+      @rat.to_f
     end
 
     def negative?

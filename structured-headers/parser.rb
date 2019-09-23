@@ -46,10 +46,10 @@ module StructuredHeaders
     # parameters). input_string is modified to remove the parsed value.
     #
     def self::parse_list input_string
-      members = []
+      members = SH::List.new
       while !input_string.empty?
         member = parse_parameterized_member(input_string)
-        members << member
+        members.append *member
         _discard_leading_OWS(input_string)
         return members if input_string.empty?
         raise SH::ParseError, "parse_list: expected comma after list member" if input_string.slice!(0) != ','
@@ -94,7 +94,7 @@ module StructuredHeaders
     #
     def self::parse_inner_list input_string
       raise SH::ParseError, "parse_inner_list: missing open '('" if input_string.slice!(0) != '('
-      inner_list = []
+      inner_list = SH::InnerList.new
       while !input_string.empty?
         _discard_leading_OWS(input_string)
         if input_string.slice(0) == ')'
@@ -116,11 +116,11 @@ module StructuredHeaders
       raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
       output_string = SH::empty_string
       while !input_string.empty?
-        return output_string if input_string.slice(0) !~ /\A[a-z0-9*_-]/
+        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9*_-]/
         char = input_string.slice!(0)
         output_string << char
       end
-      output_string
+      SH::Key.new(output_string)
     end
 
     ##
@@ -128,13 +128,13 @@ module StructuredHeaders
     # item). input_string is modified to remove the parsed value.
     #
     def self::parse_dictionary input_string
-      dictionary = {}
+      dictionary = SH::Dictionary.new
       while !input_string.empty?
         this_key = parse_key(input_string)
         raise SH::ParseError, "parse_dictionary: duplicate key #{this_key.inspect}" if dictionary.key? this_key
         raise SH::ParseError, "parse_dictionary: expected '=' after key" if input_string.slice!(0) != '='
         member = parse_parameterized_member(input_string)
-        dictionary[this_key] = member
+        dictionary.set this_key, *member
         _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
         raise SH::ParseError, "parse_dictionary: expected ',' after value" if input_string.slice!(0) != ','
@@ -197,12 +197,12 @@ module StructuredHeaders
         raise SH::ParseError, "parse_number: float too long #{input_number}" if type == :float && input_number.length > 16
       end
       if type == :integer
-        output_number = input_number.to_i(10) * sign
+        output_number = SH::Integer.new(input_number.to_i(10) * sign)
         raise SH::ParseError, "parse_number: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
         raise SH::ParseError, "parse_number: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
         raise SH::ParseError, "parse_number: too many digits after decimal point in #{input_numer}" if input_number =~ /\.\d{7}/
-        output_number = input_number.to_f * sign
+        output_number = SH::Float.new(input_number.to_f * sign)
       end
       output_number
     end
@@ -226,7 +226,7 @@ module StructuredHeaders
             output_string << next_char
           end
         elsif char == '"'
-          return output_string
+          return SH::String.new(output_string)
         elsif char =~ /\A[\x00-\x1F\x7F]/
           raise SH::ParseError, "parse_string: invalid character #{char.inspect}"
         else
@@ -244,7 +244,7 @@ module StructuredHeaders
       raise SH::ParseError, "parse_token: first character not ALPHA #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z]/
       output_string = SH::empty_string
       while !input_string.empty?
-        return output_string if input_string !~ %r{\A[A-Za-z0-9_.:%*/-]}
+        return SH::Token.new(output_string) if input_string !~ %r{\A[A-Za-z0-9_.:%*/-]}
         char = input_string.slice!(0)
         output_string << char
       end
@@ -295,11 +295,11 @@ module StructuredHeaders
       input_string.slice!(0)
       if input_string.slice(0) == '1'
         input_string.slice!(0)
-        return true
+        return SH::Boolean.new(true)
       end
       if input_string.slice(0) == '0'
         input_string.slice!(0)
-        return false
+        return SH::Boolean.new(false)
       end
       raise SH::ParseError, "parse_boolean: invalid boolean character #{input_string.slice(0).inspect}, expected '1' or '0'"
     end

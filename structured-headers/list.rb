@@ -1,6 +1,8 @@
 
 module StructuredHeaders
   class List
+    include Enumerable
+
     def initialize arr=[]
       @array = []
       arr.each {|v| append v }
@@ -31,7 +33,7 @@ module StructuredHeaders
       parameters = parameters.each_pair.with_object({}) do |(key, value), hsh|
         key = SH::Key.new(key) unless key.is_a? SH::Key
         value = SH::Item.new value unless value.nil?
-        hsh[key] = value
+        hsh[key.to_s] = value
       end
       @array << [list_member, parameters]
       self

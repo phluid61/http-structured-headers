@@ -1,6 +1,8 @@
 
 module StructuredHeaders
   class Dictionary
+    include Enumerable
+
     def initialize hsh={}
       @hash = {}
       hsh.each_pair {|k,v| set k, v }
@@ -15,7 +17,7 @@ module StructuredHeaders
     end
 
     def key? k
-      @hash.each_key {|j| return true if j.to_s == k }
+      @hash.each_key {|j| return true if j.to_s == k.to_s }
       false
     end
 
@@ -37,9 +39,9 @@ module StructuredHeaders
       parameters = parameters.each_pair.with_object({}) do |(key, value), hsh|
         key = SH::Key.new(key) unless key.is_a? SH::Key
         value = SH::Item.new value unless value.nil?
-        hsh[key] = value
+        hsh[key.to_s] = value
       end
-      @hash[key] = [member_value, parameters]
+      @hash[key.to_s] = [member_value, parameters]
       self
     end
 
