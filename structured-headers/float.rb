@@ -21,6 +21,14 @@ module StructuredHeaders
     attr_reader :float
     attr_reader :integer_part_s, :fractional_part_s
 
+    def < oth
+      @rat < oth
+    end
+
+    def > oth
+      @rat > oth
+    end
+
     def to_r
       @rat
     end

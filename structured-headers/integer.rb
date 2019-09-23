@@ -9,6 +9,14 @@ module StructuredHeaders
     end
     attr_reader :int
 
+    def < oth
+      @int < oth
+    end
+
+    def > oth
+      @int > oth
+    end
+
     def to_i
       @int
     end
