@@ -46,13 +46,12 @@ module StructuredHeaders
 
     def self::serialize_list input_list
       output = SH::empty_string
-      input_list.each_member.with_index do |(member, parameters), idx|
-        if member.is_a? SH::InnerList
-          mem_value = serialize_inner_list(member)
+      input_list.each_member.with_index do |(member_value, parameters), idx|
+        if member_value.is_a? SH::InnerList
+          output << serialize_inner_list(member_value)
         else
-          mem_value = serialize_item(member)
+          output << serialize_item(member_value)
         end
-        output << mem_value
         output << serialize_parameters(parameters)
         if idx < (input_list.length - 1)
           output << COMMA
@@ -64,9 +63,8 @@ module StructuredHeaders
 
     def self::serialize_inner_list inner_list
       output = (+'(').force_encoding(Encoding::US_ASCII)
-      inner_list.each_member do |mem|
-        value = serialize_item(mem)
-        output << value
+      inner_list.each_member do |member_value|
+        output << serialize_item(member_value)
         output << WS unless inner_list.empty?
       end
       output << ')'.b
@@ -77,20 +75,18 @@ module StructuredHeaders
       output = SH::empty_string
       parameters.each_pair do |param_name, param_value|
         output << ';'.b
-        name = serialize_key(param_name)
-        output << name
+        output << serialize_key(param_name)
         if !param_value.nil?
-          value = serialize_item(param_value)
           output << '='.b
-          output << value
+          output << serialize_item(param_value)
         end
       end
       output
     end
 
     def self::serialize_key input_key
-      # if input_key is not a sequence of characters, or contains characters not allowed
-      # in the ABNF for key, fail serialization -- impossible if it's an SH::Key
+      # if input_key is not a sequence of characters, or contains characters not in lcalpha,
+      # DIGIT, "*", "_", or "-", fail serialization -- impossible if it's an SH::Key
       output = SH::empty_string
       output << input_key.value
       output
@@ -99,15 +95,13 @@ module StructuredHeaders
     def self::serialize_dictionary input_dictionary
       output = SH::empty_string
       input_dictionary.each_member.with_index do |(member_name, member_value, parameters), idx|
-        name = serialize_key(member_name)
-        output << name
+        output << serialize_key(member_name)
         output << '='.b
         if member_value.is_a? SH::InnerList
-          value = serialize_inner_list(member_value)
+          output << serialize_inner_list(member_value)
         else
-          value = serialize_item(member_value)
+          output << serialize_item(member_value)
         end
-        output << value
         output << serialize_parameters(parameters)
         if idx < (input_dictionary.length - 1)
           output << COMMA
@@ -137,7 +131,7 @@ module StructuredHeaders
     end
 
     def self::serialize_integer input_integer
-      # check ranges -- not needed for SH::Integer
+      raise SH::SerializationError, "serialize_integer: integer out of range" if input_integer.int < -999_999_999_999_999 || input_integer.int > 999_999_999_999_999
       output = SH::empty_string
       output << '-'.b if input_integer.negative?
       output << input_integer.abs.to_s(10)
@@ -145,17 +139,20 @@ module StructuredHeaders
     end
 
     def self::serialize_float input_float
-      # check ranges -- not needed for SH::Float
       output = SH::empty_string
       output << '-'.b if input_float.negative?
-      output << input_float.integer_part.to_s(10)
+      output << input_float.integer_part_s
+      integer_digits = input_float.integer_part_s.length
+      raise SH::SerializationError, "serialize_float: too many digits in integer part" if integer_digits > 14
+      digits_avail = 15 - integer_digits
+      fractional_digits_avail = [digits_avail, 6].min
       output << '.'.b
-      output << input_float.fractional_part.to_f.to_s[2..-1]
+      output << input_float.fractional_part_s[0..fractional_digits_avail]
       output
     end
 
     def self::serialize_string input_string
-      # check chars -- not needed for SH::String
+      raise SH::SerializationError, "serialize_string: invalid characters" if input_string.string =~ /[\x00-\x1f\x7f]/
       output = SH::empty_string
       output << DQUOTE
       input_string.each_char do |char|
@@ -169,7 +166,7 @@ module StructuredHeaders
     end
 
     def self::serialize_token input_token
-      # check chars -- not needed for SH::Token
+      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ /[A-Za-z0-9_.:%*-]/
       output = SH::empty_string
       output << input_token.to_s
       output

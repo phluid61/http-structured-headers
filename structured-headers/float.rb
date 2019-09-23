@@ -9,12 +9,17 @@ module StructuredHeaders
       raise "float out of range #{float.inspect}" if intpart > 99_999_999_999_999
 
       digits = intpart == 0 ? 1 : (Math.log10(intpart).floor + 1)
-      precis = 15 - digits
+      precis = [15 - digits, 6].min
 
       @str = ("%.#{precis}f" % float).sub(/(?<=\d)0+\z/, '')
       @rat = Rational(@str)
+
+      @str =~ /\A-?(\d+)\.(\d+)\z/
+      @integer_part_s = $1
+      @fractional_part_s = $2
     end
     attr_reader :float
+    attr_reader :integer_part_s, :fractional_part_s
 
     def to_r
       @rat

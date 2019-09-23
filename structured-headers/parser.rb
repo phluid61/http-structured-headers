@@ -71,7 +71,7 @@ module StructuredHeaders
         member = parse_item(input_string)
       end
       parameters = {}
-      loop do
+      while !input_string.empty?
         _discard_leading_OWS(input_string)
         break if input_string.slice(0) != ';'
         input_string.slice!(0)
@@ -109,6 +109,21 @@ module StructuredHeaders
     end
 
     ##
+    # Given an ASCII string input_string, return a key. input_string is
+    # modified to remove the parsed value.
+    #
+    def self::parse_key input_string
+      raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
+      output_string = SH::empty_string
+      while !input_string.empty?
+        return output_string if input_string.slice(0) !~ /\A[a-z0-9*_-]/
+        char = input_string.slice!(0)
+        output_string << char
+      end
+      output_string
+    end
+
+    ##
     # Given an ASCII string input_string, return an ordered map of (key,
     # item). input_string is modified to remove the parsed value.
     #
@@ -127,24 +142,6 @@ module StructuredHeaders
         raise SH::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
       end
       dictionary
-    end
-
-    ##
-    # Given an ASCII string input_string, return a key. input_string is
-    # modified to remove the parsed value.
-    #
-    def self::parse_key input_string
-      raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
-      output_string = SH::empty_string
-      while !input_string.empty?
-        char = input_string.slice!(0)
-        if char !~ /\A[a-z0-9*_-]/
-          input_string.replace(char + input_string)
-          return output_string
-        end
-        output_string << char
-      end
-      output_string
     end
 
     ##
@@ -247,11 +244,8 @@ module StructuredHeaders
       raise SH::ParseError, "parse_token: first character not ALPHA #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z]/
       output_string = SH::empty_string
       while !input_string.empty?
+        return output_string if input_string !~ %r{\A[A-Za-z0-9_.:%*/-]}
         char = input_string.slice!(0)
-        if char !~ /\A[A-Za-z0-9_\-.:%*\/]/
-          input_string.replace(char + input_string)
-          return output_string
-        end
         output_string << char
       end
       SH::Token.new(output_string)
