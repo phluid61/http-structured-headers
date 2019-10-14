@@ -7,9 +7,9 @@ $passed = 0
 $failed = 0
 
 $paramlist = SH::List.new
-$paramlist.append(SH::Token.new('text/html'), {'charset'=>:'utf-8'})
+$paramlist.append(SH::Token.new('text/html').tap{|t| t.parameters['charset'] = :'utf-8' })
 $paramlist.append(SH::Token.new('text/plain'))
-$paramlist.append(SH::Token.new('text/*'), {q: 0.001})
+$paramlist.append(SH::Token.new('text/*').tap{|t| t.parameters[:q] = 0.001})
 
 [
   [

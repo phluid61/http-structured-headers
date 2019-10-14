@@ -1,6 +1,6 @@
 
 module StructuredHeaders
-  class Dictionary
+  class Parameters
     include Enumerable
 
     def initialize hsh={}
@@ -23,10 +23,14 @@ module StructuredHeaders
     def set member_name, member_value
       key = SH::Key.new(member_name)
       case member_value
-      when SH::InnerList, SH::Item
-        # nop
-      when Array
-        member_value = SH::InnerList.new member_value
+      when nil
+        # noop
+      when SH::Item
+        member_value.strip_parameters!
+      #when SH::InnerList
+      #  member_value.strip_parameters!
+      #when Array
+      #  member_value = SH::InnerList.new member_value
       else
         member_value = SH::Item.new member_value
       end
@@ -36,8 +40,8 @@ module StructuredHeaders
     alias []= set
 
     # Yields: member-name, member-value
-    def each_member
-      return enum_for(:each_member) unless block_given?
+    def each_pair
+      return enum_for(:each_pari) unless block_given?
       @hash.each_pair {|_,kv| yield *kv }
     end
 

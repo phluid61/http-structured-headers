@@ -29,9 +29,10 @@ module StructuredHeaders
       @int.abs
     end
 
-    def inpect
-      "#<#{@int.inspect}>"
+    def inspect
+      "#<#{self.class.name}: #{@int.inspect}>"
     end
+    alias to_s inspect
   end
 end
 

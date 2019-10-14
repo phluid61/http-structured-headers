@@ -15,12 +15,20 @@ def FAILURE.inspect() 'failure'; end
 
 def __cast__ result
   case result
+  when SH::Parameters
+    result.map do |(k, v)|
+      if v.nil?
+        [__cast__(k), nil]
+      else
+        [__cast__(k), [__cast__(v), __cast__(v.parameters)]]
+      end
+    end.to_h
   when SH::List
-    result.map {|(item, params)| [__cast__(item), __cast__(params)] }
+    result.map {|item| [__cast__(item), __cast__(item.parameters)] }
   when SH::InnerList, Array
     result.map {|item| __cast__ item }
   when SH::Dictionary
-    result.map {|(k, v, p)| [__cast__(k), [__cast__(v), __cast__(p)]] }.to_h
+    result.map {|(k, v)| [__cast__(k), [__cast__(v), __cast__(v.parameters)]] }.to_h
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
   when SH::Integer

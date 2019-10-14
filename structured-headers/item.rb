@@ -1,6 +1,8 @@
 
 module StructuredHeaders
   module Item
+    include SH::Parameterised
+
     def self::new obj
       case obj
       when SH::Integer, SH::Float, SH::String, SH::Token, SH::Boolean, SH::ByteSequence

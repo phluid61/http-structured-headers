@@ -25,6 +25,10 @@ module StructuredHeaders
       end
     end
 
+    #
+    # Given a structure defined in this specification, return an ASCII
+    # string suitable for use in a HTTP header value.
+    #
     def self::serialize obj
       _type, obj = _coerce(obj)
 
@@ -44,15 +48,18 @@ module StructuredHeaders
       output_string.b
     end
 
+    #
+    # Given an array of (member-value, parameters) tuples as input_list,
+    # return an ASCII string suitable for use in a HTTP header value.
+    #
     def self::serialize_list input_list
       output = SH::empty_string
-      input_list.each_member.with_index do |(member_value, parameters), idx|
+      input_list.each_member.with_index do |member_value, idx|
         if member_value.is_a? SH::InnerList
           output << serialize_inner_list(member_value)
         else
           output << serialize_item(member_value)
         end
-        output << serialize_parameters(parameters)
         if idx < (input_list.length - 1)
           output << COMMA
           output << WS
@@ -61,6 +68,11 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given an array of (member-value, parameters) tuples as inner_list and
+    # parameters as list_parameters, return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
     def self::serialize_inner_list inner_list
       output = (+'(').force_encoding(Encoding::US_ASCII)
       inner_list.each_member.with_index do |member_value, idx|
@@ -68,9 +80,15 @@ module StructuredHeaders
         output << WS if idx < (inner_list.length - 1)
       end
       output << ')'.b
+      output << serialize_parameters(inner_list.parameters)
       output
     end
 
+    #
+    # Given an ordered dictionary as input_parameters (each member having
+    # a param-name and a param-value), return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
     def self::serialize_parameters parameters
       output = SH::empty_string
       parameters.each_pair do |param_name, param_value|
@@ -84,6 +102,10 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given a key as input_key, return an ASCII string suitable for use in
+    # a HTTP header value.
+    #
     def self::serialize_key input_key
       input_key = SH::Key.new(input_key).value
       # if input_key is not a sequence of characters, or contains characters not in lcalpha,
@@ -93,9 +115,14 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given an ordered dictionary as input_dictionary (each member having
+    # a member-name and a tuple value of (member-value, parameters)),
+    # return an ASCII string suitable for use in a HTTP header value.
+    #
     def self::serialize_dictionary input_dictionary
       output = SH::empty_string
-      input_dictionary.each_member.with_index do |(member_name, member_value, parameters), idx|
+      input_dictionary.each_member.with_index do |(member_name, member_value), idx|
         output << serialize_key(member_name)
         output << '='.b
         if member_value.is_a? SH::InnerList
@@ -103,7 +130,6 @@ module StructuredHeaders
         else
           output << serialize_item(member_value)
         end
-        output << serialize_parameters(parameters)
         if idx < (input_dictionary.length - 1)
           output << COMMA
           output << WS
@@ -112,7 +138,22 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given an item bare_item and parameters item_parameters as input,
+    # return an ASCII string suitable for use in a HTTP header value.
+    #
     def self::serialize_item input_item
+      output = SH::empty_string
+      output << serialize_bare_item(input_item)
+      output << serialize_parameters(input_item.parameters)
+      output
+    end
+
+    #
+    # Given an item as input_item, return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
+    def self::serialize_bare_item input_item
       case input_item
       when SH::Integer
         return serialize_integer(input_item)
@@ -131,6 +172,10 @@ module StructuredHeaders
       end
     end
 
+    #
+    # Given an integer as input_integer, return an ASCII string suitable
+    # for use in a HTTP header value.
+    #
     def self::serialize_integer input_integer
       raise SH::SerializationError, "serialize_integer: integer out of range" if input_integer.int < -999_999_999_999_999 || input_integer.int > 999_999_999_999_999
       output = SH::empty_string
@@ -139,6 +184,10 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given a float as input_float, return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
     def self::serialize_float input_float
       output = SH::empty_string
       output << '-'.b if input_float.negative?
@@ -152,6 +201,10 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given a string as input_string, return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
     def self::serialize_string input_string
       raise SH::SerializationError, "serialize_string: invalid characters" if input_string.string =~ /[\x00-\x1f\x7f]/
       output = SH::empty_string
@@ -166,13 +219,21 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given a token as input_token, return an ASCII string suitable for
+    # use in a HTTP header value.
+    #
     def self::serialize_token input_token
-      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ /[A-Za-z0-9_.:%*-]/
+      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[A-Za-z0-9_.:%*/-]}
       output = SH::empty_string
       output << input_token.to_s
       output
     end
 
+    #
+    # Given a byte sequence as input_bytes, return an ASCII string
+    # suitable for use in a HTTP header value.
+    #
     def self::serialize_byte_sequence input_bytes
       # check type -- not needed here
       output = SH::empty_string
@@ -182,6 +243,10 @@ module StructuredHeaders
       output
     end
 
+    #
+    # Given a Boolean as input_boolean, return an ASCII string suitable
+    # for use in a HTTP header value.
+    #
     def self::serialize_boolean input_boolean
       # check type -- not needed here
       output = SH::empty_string
