@@ -20,7 +20,7 @@ def __cast__ result
       if v.nil?
         [__cast__(k), nil]
       else
-        [__cast__(k), [__cast__(v), __cast__(v.parameters)]]
+        [__cast__(k), __cast__(v)]
       end
     end.to_h
   when SH::List
