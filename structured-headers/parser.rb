@@ -281,7 +281,7 @@ module StructuredHeaders
       raise SH::ParseError, "parse_byte_sequence: missing final '*'" unless (_idx = input_string.index('*'))
       b64_content = input_string.slice!(0, _idx)
       input_string.slice!(0)
-      raise SH::ParseError, "parse_byte_sequence: non-base-64 characters in #{input_string.inspect}" if input_string !~ /\A[A-Za-z0-9+\/=]*\z/
+      raise SH::ParseError, "parse_byte_sequence: non-base-64 characters in #{b64_content.inspect}" if b64_content !~ /\A[A-Za-z0-9+\/=]*\z/
       binary_content = _base64_decode64(b64_content)
       SH::ByteSequence.new(binary_content)
     end
