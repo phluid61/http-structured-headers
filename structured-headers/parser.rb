@@ -156,7 +156,6 @@ module StructuredHeaders
     def self::parse_parameters input_string
       parameters = SH::Parameters.new
       while !input_string.empty?
-        _discard_leading_OWS(input_string)
         break if input_string.slice(0) != ';'
         input_string.slice!(0)
         _discard_leading_OWS(input_string)
