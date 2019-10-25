@@ -3,6 +3,7 @@ require_relative 'structured-headers'
 require_relative 'libs/base32'
 require_relative 'libs/colours'
 
+require 'mug/self'
 require 'json'
 #require 'date'
 
@@ -13,26 +14,38 @@ $failed = 0
 FAILURE = Object.new
 def FAILURE.inspect() 'failure'; end
 
-def __cast__ result
+def __cast__ result, ignore_parameters=false
   case result
+  when SH::Parameters
+    result.map do |(k, v)|
+      if v.nil?
+        [__cast__(k), nil]
+      else
+        [__cast__(k), __cast__(v, true)]
+      end
+    end.to_h
   when SH::List
-    result.map {|(item, params)| [__cast__(item), __cast__(params)] }
-  when SH::InnerList, Array
-    result.map {|item| __cast__ item }
+    result.map {|item| __cast__(item) }
+  when SH::InnerList
+    result.map {|item| __cast__(item) }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when Array
+    result.map {|item| __cast__(item) }
   when SH::Dictionary
-    result.map {|(k, v, p)| [__cast__(k), [__cast__(v), __cast__(p)]] }.to_h
+    result.map {|(k, v)| [__cast__(k), __cast__(v)] }.to_h
   when Hash
     result.map {|k, v| [k, __cast__(v)] }.to_h
   when SH::Integer
-    result.to_i
+    result.to_i.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Float
-    result.to_f
+    result.to_f.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Boolean
-    result.bool
-  when SH::String, SH::Token, SH::Key, Symbol
-    result.to_s
+    result.bool.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when SH::String, SH::Token
+    result.to_s.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::ByteSequence
-    Base32.strict_encode32 result.string
+    Base32.strict_encode32(result.string).self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when SH::Key, Symbol
+    result.to_s
 #  #when Date, DateTime, Time
 #  when DateTime
 #    "[#{result.iso8601}]"

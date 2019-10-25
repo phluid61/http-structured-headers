@@ -16,12 +16,7 @@ module StructuredHeaders
       @array.empty?
     end
 
-    def << list_member
-      append list_member
-    end
-
-    def append list_member, parameters={}
-      # FIXME: dedup this with SH::Dictionary
+    def append list_member
       case list_member
       when SH::InnerList, SH::Item
         # nop
@@ -30,29 +25,20 @@ module StructuredHeaders
       else
         list_member = SH::Item.new list_member
       end
-      parameters = parameters.each_pair.with_object({}) do |(key, value), hsh|
-        key = SH::Key.new(key) unless key.is_a? SH::Key
-        value = SH::Item.new value unless value.nil?
-        hsh[key.to_s] = value
-      end
-      @array << [list_member, parameters]
+      @array << list_member
       self
     end
+    alias << append
 
-    # Yields: list-member, {parameters...}
+    # Yields: list-member
     def each_member
       return enum_for(:each_member) unless block_given?
-      @array.each {|e| yield *e }
-    end
-
-    # Yields: [list-member, {parameters...}]
-    def each
-      return enum_for(:each) unless block_given?
       @array.each {|e| yield e }
     end
+    alias each each_member
 
     def inspect
-      "#<#{@array.map{|(v,p)| "#{v.inspect}#{p.map{|k,w|";#{k.inspect}=#{w.inspect}"}.join}"}.join(', ')}>"
+      "#<#{self.class.name}: [#{@array.map{|v| v.inspect }.join(', ')}]>"
     end
   end
 end

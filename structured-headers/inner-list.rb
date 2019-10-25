@@ -1,9 +1,10 @@
 
 module StructuredHeaders
   class InnerList
+    include SH::Parameterised
     include Enumerable
 
-    def initialize arr=[]
+    def initialize arr=[], params={}
       @array = []
       arr.each {|v| append v }
     end
@@ -37,7 +38,7 @@ module StructuredHeaders
     alias each each_member
 
     def inspect
-      "#<#{@array.map{|v|v.inspect}.join(' ')}>"
+      "#<#{self.class.name}: [#{@array.map{|v|v.inspect}.join(' ')}]>"
     end
   end
 end

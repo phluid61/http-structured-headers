@@ -42,14 +42,13 @@ module StructuredHeaders
     end
 
     ##
-    # Given an ASCII string input_string, return an array of (member,
-    # parameters). input_string is modified to remove the parsed value.
+    # Given an ASCII string input_string, return an array of (item_or_inner_list,
+    # parameters) tuples. input_string is modified to remove the parsed value.
     #
     def self::parse_list input_string
       members = SH::List.new
       while !input_string.empty?
-        member = parse_parameterized_member(input_string)
-        members.append *member
+        members.append parse_item_or_inner_list(input_string)
         _discard_leading_OWS(input_string)
         return members if input_string.empty?
         raise SH::ParseError, "parse_list: expected comma after list member" if input_string.slice!(0) != ','
@@ -60,37 +59,23 @@ module StructuredHeaders
     end
 
     ##
-    # Given an ASCII string input_string, return an token with an ordered
-    # map of parameters. input_string is modified to remove the parsed
-    # value.
+    # Given an ASCII string as input_string, return the tuple (item_or_inner_list,
+    # parameters), where item_or_inner_list can be either a single bare
+    # item, or an array of (bare_item, parameters) tuples. input_string
+    # is modified to remove the parsed value.
     #
-    def self::parse_parameterized_member input_string
+    def self::parse_item_or_inner_list input_string
       if input_string.slice(0) == '('
-        member = parse_inner_list(input_string)
+        parse_inner_list(input_string)
       else
-        member = parse_item(input_string)
+        parse_item(input_string)
       end
-      parameters = {}
-      while !input_string.empty?
-        _discard_leading_OWS(input_string)
-        break if input_string.slice(0) != ';'
-        input_string.slice!(0)
-        _discard_leading_OWS(input_string)
-        param_name = parse_key(input_string)
-        raise SH::ParseError, "parse_parameterized_member: duplicate parameter #{param_name.inspect}" if parameters.key? param_name
-        param_value = nil
-        if input_string.slice(0) == '='
-          input_string.slice!(0)
-          param_value = parse_item(input_string)
-        end
-        parameters[param_name] = param_value
-      end
-      [member, parameters]
     end
 
     ##
-    # Given an ASCII string input_string, return an array of items.
-    # input_string is modified to remove the parsed value.
+    # Given an ASCII string as input_string, return the tuple (inner_list,
+    # parameters), where inner_list is an array of (bare_item, parameters)
+    # tuples. input_string is modified to remove the parsed value.
     #
     def self::parse_inner_list input_string
       raise SH::ParseError, "parse_inner_list: missing open '('" if input_string.slice!(0) != '('
@@ -99,6 +84,7 @@ module StructuredHeaders
         _discard_leading_OWS(input_string)
         if input_string.slice(0) == ')'
           input_string.slice!(0)
+          inner_list.parameters = parse_parameters(input_string)
           return inner_list
         end
         item = parse_item(input_string)
@@ -109,23 +95,9 @@ module StructuredHeaders
     end
 
     ##
-    # Given an ASCII string input_string, return a key. input_string is
-    # modified to remove the parsed value.
-    #
-    def self::parse_key input_string
-      raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
-      output_string = SH::empty_string
-      while !input_string.empty?
-        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9*_-]/
-        char = input_string.slice!(0)
-        output_string << char
-      end
-      SH::Key.new(output_string)
-    end
-
-    ##
-    # Given an ASCII string input_string, return an ordered map of (key,
-    # item). input_string is modified to remove the parsed value.
+    # Given an ASCII string as input_string, return an ordered map whose
+    # values are (item_or_inner_list, parameters) tuples. input_string
+    # is modified to remove the parsed value.
     #
     def self::parse_dictionary input_string
       dictionary = SH::Dictionary.new
@@ -133,8 +105,8 @@ module StructuredHeaders
         this_key = parse_key(input_string)
         raise SH::ParseError, "parse_dictionary: duplicate key #{this_key.inspect}" if dictionary.key? this_key
         raise SH::ParseError, "parse_dictionary: expected '=' after key" if input_string.slice!(0) != '='
-        member = parse_parameterized_member(input_string)
-        dictionary.set this_key, *member
+        member = parse_item_or_inner_list(input_string)
+        dictionary.set this_key, member
         _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
         raise SH::ParseError, "parse_dictionary: expected ',' after value" if input_string.slice!(0) != ','
@@ -145,10 +117,21 @@ module StructuredHeaders
     end
 
     ##
-    # Given an ASCII string input_string, return an item. input_string is
-    # modified to remove the parsed value.
+    # Given an ASCII string as input_string, return a (bare_item,
+    # parameters) tuple. input_string is modified to remove the parsed
+    # value.
     #
     def self::parse_item input_string
+      bare_item = parse_bare_item(input_string)
+      bare_item.parameters = parse_parameters(input_string)
+      bare_item
+    end
+
+    ##
+    # Given an ASCII string as input_string, return a bare item.
+    # input_string is modified to remove the parsed value.
+    #
+    def self::parse_bare_item input_string
       case input_string.slice(0)
       when /\A[-0-9]/
         parse_number(input_string)
@@ -166,11 +149,49 @@ module StructuredHeaders
     end
 
     ##
+    # Given an ASCII string as input_string, return an ordered map whose
+    # values are bare items. input_string is modified to remove the
+    # parsed value.
+    #
+    def self::parse_parameters input_string
+      parameters = SH::Parameters.new
+      while !input_string.empty?
+        break if input_string.slice(0) != ';'
+        input_string.slice!(0)
+        _discard_leading_OWS(input_string)
+        param_name = parse_key(input_string)
+        raise "parse_parameters: duplicate key in parameters #{param_name.inspect}" if parameters.key? param_name
+        param_value = nil
+        if input_string.slice(0) == '='
+          input_string.slice!(0)
+          param_value = parse_bare_item(input_string)
+        end
+        parameters.set param_name, param_value
+      end
+      parameters
+    end
+
+    ##
+    # Given an ASCII string as input_string, return a key. input_string
+    # is modified to remove the parsed value.
+    #
+    def self::parse_key input_string
+      raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
+      output_string = SH::empty_string
+      while !input_string.empty?
+        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9*_-]/
+        char = input_string.slice!(0)
+        output_string << char
+      end
+      SH::Key.new(output_string)
+    end
+
+    ##
     # Given an ASCII string input_string, return a number. input_string is
     # modified to remove the parsed value.
     #
-    # NOTE: This algorithm parses both Integers (Section 3.4) and Floats
-    # (Section 3.5), and returns the corresponding structure.
+    # NOTE: This algorithm parses both Integers (Section 3.3.1) and Floats
+    # (Section 3.3.2), and returns the corresponding structure.
     #
     def self::parse_number input_string
       type = :integer

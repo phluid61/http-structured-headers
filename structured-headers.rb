@@ -1,6 +1,9 @@
 
 require_relative 'structured-headers/core'
 
+require_relative 'structured-headers/parameters'
+require_relative 'structured-headers/parameterised'
+
 require_relative 'structured-headers/dictionary'
 require_relative 'structured-headers/list'
 require_relative 'structured-headers/inner-list'

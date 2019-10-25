@@ -11,7 +11,6 @@ module StructuredHeaders
   def self::empty_string
     (+'').force_encoding(Encoding::US_ASCII)
   end
-
 end
 
 SH = StructuredHeaders
