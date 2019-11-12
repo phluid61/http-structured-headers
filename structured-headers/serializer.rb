@@ -224,7 +224,7 @@ module StructuredHeaders
     # use in a HTTP header value.
     #
     def self::serialize_token input_token
-      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[A-Za-z0-9_.:%*/-]}
+      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[!#$%'*+.^_`|~0-9A-Za-z:/-]}
       output = SH::empty_string
       output << input_token.to_s
       output

@@ -265,7 +265,7 @@ module StructuredHeaders
       raise SH::ParseError, "parse_token: first character not ALPHA #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z]/
       output_string = SH::empty_string
       while !input_string.empty?
-        return SH::Token.new(output_string) if input_string !~ %r{\A[A-Za-z0-9_.:%*/-]}
+        return SH::Token.new(output_string) if input_string !~ %r{\A[!#$%&'*+.^_`|~0-9A-Za-z:/-]}
         char = input_string.slice!(0)
         output_string << char
       end
