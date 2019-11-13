@@ -40,10 +40,12 @@ def __cast__ result, ignore_parameters=false
     result.to_f.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Boolean
     result.bool.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::String, SH::Token
+  when SH::String
     result.to_s.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when SH::Token
+    result.to_s.self {|v| {'__type'=>'token', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::ByteSequence
-    Base32.strict_encode32(result.string).self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+    Base32.strict_encode32(result.string).self {|v| {'__type'=>'binary', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Key, Symbol
     result.to_s
 #  #when Date, DateTime, Time
