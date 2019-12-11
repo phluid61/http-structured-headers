@@ -15,12 +15,12 @@ $paramlist.append(SH::Token.new('text/*').tap{|t| t.parameters[:q] = 0.001})
   [
     'dictionary',
       SH::Dictionary.new({'a'=>1, :b=>'B', 'c-d'=>3.14, 'e_f'=>"\n"}),
-      'a=1, b="B", c-d=3.14, e_f=*Cg==*'
+      'a=1, b="B", c-d=3.14, e_f=:Cg==:'
   ],
   [
     'list',
       SH::List.new(['string', -0x10, 3.1400, "\t", :foobar, ]),
-      '"string", -16, 3.14, *CQ==*, foobar'
+      '"string", -16, 3.14, :CQ==:, foobar'
   ],
   [
     'list',
@@ -30,7 +30,7 @@ $paramlist.append(SH::Token.new('text/*').tap{|t| t.parameters[:q] = 0.001})
   [
     'list',
       [[:a, :b],['c'],[-4, 5.6, "\n"]],
-      '(a b), ("c"), (-4 5.6 *Cg==*)'
+      '(a b), ("c"), (-4 5.6 :Cg==:)'
   ],
   [ 'list',         [],       nil ],
   [ 'list',         [[],[]],  '(), ()' ],
@@ -41,9 +41,9 @@ $paramlist.append(SH::Token.new('text/*').tap{|t| t.parameters[:q] = 0.001})
   [ 'item',         '',     '""' ],
   [ 'item',      'a b',  '"a b"' ],
   [ 'item',      'a"b', '"a\\"b"'],
-  [ 'item', "\u{1234}",  '*4Yi0*'],
-  [ 'item', StructuredHeaders::ByteSequence.new('hello'), '*aGVsbG8=*'],
-  [ 'item', StructuredHeaders::ByteSequence.new(''),      '**'],
+  [ 'item', "\u{1234}",  ':4Yi0:'],
+  [ 'item', StructuredHeaders::ByteSequence.new('hello'), ':aGVsbG8=:'],
+  [ 'item', StructuredHeaders::ByteSequence.new(''),      '::'],
   [ 'item',    :foobar,  'foobar'],
   [ 'item',    :FooBar,  'FooBar'],
   [ 'item', StructuredHeaders::Token.new('a_b-c3/*'), 'a_b-c3/*'],
