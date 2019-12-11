@@ -4,10 +4,10 @@ require 'base64'
 module StructuredHeaders
 
   module Parser
-    LEADING_OWS = /\A[\x20\x09]+/
+    LEADING_SP = /\A\x20+/
 
-    def self::_discard_leading_OWS input_string
-      input_string.sub!(LEADING_OWS, '')
+    def self::_discard_leading_SP input_string
+      input_string.sub!(LEADING_SP, '')
     end
 
     def self::_bytes_to_string bytes
@@ -25,7 +25,7 @@ module StructuredHeaders
     #
     def self::parse input_bytes, header_type
       input_string = _bytes_to_string(input_bytes)
-      _discard_leading_OWS(input_string)
+      _discard_leading_SP(input_string)
       case header_type
       when 'list', :list
         output = parse_list(input_string)
@@ -36,7 +36,7 @@ module StructuredHeaders
       #else
       #  raise SH::ParseError, "parse: unrecognised type #{header_type.inspect}"
       end
-      _discard_leading_OWS(input_string)
+      _discard_leading_SP(input_string)
       raise SH::ParseError, "parse: input_string is not empty: #{input_string.inspect}" unless input_string.empty?
       output
     end
@@ -49,10 +49,10 @@ module StructuredHeaders
       members = SH::List.new
       while !input_string.empty?
         members.append parse_item_or_inner_list(input_string)
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         return members if input_string.empty?
         raise SH::ParseError, "parse_list: expected comma after list member" if input_string.slice!(0) != ','
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         raise SH::ParseError, "parse_list: unexpected trailing comma" if input_string.empty?
       end
       members
@@ -81,7 +81,7 @@ module StructuredHeaders
       raise SH::ParseError, "parse_inner_list: missing open '('" if input_string.slice!(0) != '('
       inner_list = SH::InnerList.new
       while !input_string.empty?
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         if input_string.slice(0) == ')'
           input_string.slice!(0)
           inner_list.parameters = parse_parameters(input_string)
@@ -104,13 +104,19 @@ module StructuredHeaders
       while !input_string.empty?
         this_key = parse_key(input_string)
         raise SH::ParseError, "parse_dictionary: duplicate key #{this_key.inspect}" if dictionary.key? this_key
-        raise SH::ParseError, "parse_dictionary: expected '=' after key" if input_string.slice!(0) != '='
-        member = parse_item_or_inner_list(input_string)
+        if input_string.slice(0) == '='
+          input_string.slice!(0)
+          member = parse_item_or_inner_list(input_string)
+        else
+          value = SH::Boolean.new(true)
+          parameters = SH::Parameters.new
+          member = value.tap{|v| v.parameters = parameters }
+        end
         dictionary.set this_key, member
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         return dictionary if input_string.empty?
         raise SH::ParseError, "parse_dictionary: expected ',' after value" if input_string.slice!(0) != ','
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         raise SH::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
       end
       dictionary
@@ -137,11 +143,11 @@ module StructuredHeaders
         parse_number(input_string)
       when '"'
         parse_string(input_string)
-      when '*'
+      when ':'
         parse_byte_sequence(input_string)
       when '?'
         parse_boolean(input_string)
-      when /\A[A-Za-z]/
+      when /\A[A-Za-z*]/
         parse_token(input_string)
       else
         raise SH::ParseError, "parse_item: unknown item #{input_string.inspect}"
@@ -158,10 +164,10 @@ module StructuredHeaders
       while !input_string.empty?
         break if input_string.slice(0) != ';'
         input_string.slice!(0)
-        _discard_leading_OWS(input_string)
+        _discard_leading_SP(input_string)
         param_name = parse_key(input_string)
         raise "parse_parameters: duplicate key in parameters #{param_name.inspect}" if parameters.key? param_name
-        param_value = nil
+        param_value = SH::Boolean.new(true)
         if input_string.slice(0) == '='
           input_string.slice!(0)
           param_value = parse_bare_item(input_string)
@@ -262,7 +268,7 @@ module StructuredHeaders
     # modified to remove the parsed value.
     #
     def self::parse_token input_string
-      raise SH::ParseError, "parse_token: first character not ALPHA #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z]/
+      raise SH::ParseError, "parse_token: first character not ALPHA or * #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z*]/
       output_string = SH::empty_string
       while !input_string.empty?
         return SH::Token.new(output_string) if input_string !~ %r{\A[!#$%&'*+.^_`|~0-9A-Za-z:/-]}
@@ -297,9 +303,9 @@ module StructuredHeaders
     # input_string is modified to remove the parsed value.
     #
     def self::parse_byte_sequence input_string
-      raise SH::ParseError, "parse_byte_sequence: missing open '*'" if input_string.slice(0) != '*'
+      raise SH::ParseError, "parse_byte_sequence: missing open ':'" if input_string.slice(0) != ':'
       input_string.slice!(0)
-      raise SH::ParseError, "parse_byte_sequence: missing final '*'" unless (_idx = input_string.index('*'))
+      raise SH::ParseError, "parse_byte_sequence: missing final ':'" unless (_idx = input_string.index(':'))
       b64_content = input_string.slice!(0, _idx)
       input_string.slice!(0)
       raise SH::ParseError, "parse_byte_sequence: non-base-64 characters in #{b64_content.inspect}" if b64_content !~ /\A[A-Za-z0-9+\/=]*\z/

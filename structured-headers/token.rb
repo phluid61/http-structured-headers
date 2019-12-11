@@ -5,7 +5,7 @@ module StructuredHeaders
 
     def initialize string
       @string = (+"#{string}").b
-      raise %{invalid token #{string.inspect}, must match: ALPHA *(tchar \\ ":" \\ "/")} unless @string =~ %r{\A[A-Za-z][!#$%&'*+.^_`|~0-9=A-Za-z:/-]*\z}
+      raise %{invalid token #{string.inspect}, must match: (ALPHA / "*") *(tchar / ":" / "/")} unless @string =~ %r{\A[A-Za-z*][!#$%&'*+.^_`|~0-9=A-Za-z:/-]*\z}
     end
     attr_reader :string
 

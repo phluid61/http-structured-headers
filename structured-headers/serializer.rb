@@ -94,7 +94,7 @@ module StructuredHeaders
       parameters.each_pair do |param_name, param_value|
         output << ';'.b
         output << serialize_key(param_name)
-        if !param_value.nil?
+        if !param_value.is_a?(SH::Boolean) || param_value.false?
           output << '='.b
           output << serialize_item(param_value)
         end
@@ -124,11 +124,13 @@ module StructuredHeaders
       output = SH::empty_string
       input_dictionary.each_member.with_index do |(member_name, member_value), idx|
         output << serialize_key(member_name)
-        output << '='.b
-        if member_value.is_a? SH::InnerList
-          output << serialize_inner_list(member_value)
-        else
-          output << serialize_item(member_value)
+        if !member_value.is_a?(SH::Boolean) || member_value.false? || member_value.parameters?
+          output << '='.b
+          if member_value.is_a? SH::InnerList
+            output << serialize_inner_list(member_value)
+          else
+            output << serialize_item(member_value)
+          end
         end
         if idx < (input_dictionary.length - 1)
           output << COMMA
@@ -237,9 +239,9 @@ module StructuredHeaders
     def self::serialize_byte_sequence input_bytes
       # check type -- not needed here
       output = SH::empty_string
-      output << '*'.b
+      output << ':'.b
       output << Base64.strict_encode64(input_bytes.to_s)
-      output << '*'.b
+      output << ':'.b
       output
     end
 

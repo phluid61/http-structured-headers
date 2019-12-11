@@ -5,6 +5,10 @@ module StructuredHeaders
       @parameters ||= SH::Parameters.new
     end
 
+    def parameters?
+      @parameters && !@parameters.empty?
+    end
+
     def parameters= params
       case params
       when SH::Parameters
