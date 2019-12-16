@@ -45,7 +45,7 @@ Dir['tests/*.json'].each do |testfile|
     begin
       parsed = SH::Parser.parse raw, header_type
       result = SH::Serializer.serialize parsed
-      result = [result]
+      result = [result].compact
       error  = nil
     rescue => ex
       puts ex.full_message(order: :bottom)

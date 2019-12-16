@@ -36,7 +36,7 @@ def __cast__ result, ignore_parameters=false
     result.map {|k, v| [k, __cast__(v)] }.to_h
   when SH::Integer
     result.to_i.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::Float
+  when SH::Decimal
     result.to_f.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Boolean
     result.bool.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }

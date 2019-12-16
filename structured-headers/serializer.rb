@@ -159,8 +159,8 @@ module StructuredHeaders
       case input_item
       when SH::Integer
         return serialize_integer(input_item)
-      when SH::Float
-        return serialize_float(input_item)
+      when SH::Decimal
+        return serialize_decimal(input_item)
       when SH::String
         return serialize_string(input_item)
       when SH::Token
@@ -187,19 +187,20 @@ module StructuredHeaders
     end
 
     #
-    # Given a float as input_float, return an ASCII string suitable for
+    # Given a decimal as input_decimal, return an ASCII string suitable for
     # use in a HTTP header value.
     #
-    def self::serialize_float input_float
+    def self::serialize_decimal input_decimal
       output = SH::empty_string
-      output << '-'.b if input_float.negative?
-      output << input_float.integer_part_s
-      integer_digits = input_float.integer_part_s.length
-      raise SH::SerializationError, "serialize_float: too many digits in integer part" if integer_digits > 14
-      digits_avail = 15 - integer_digits
-      fractional_digits_avail = [digits_avail, 6].min
+      output << '-'.b if input_decimal.negative?
+      output << input_decimal.integer_part.to_s
+      raise SH::SerializationError, "serialize_decimal: too many digits in integer part" if input_decimal.integer_part.to_s.length > 12
       output << '.'.b
-      output << input_float.fractional_part_s[0..fractional_digits_avail]
+      if input_decimal.fraction_part.zero?
+        output << '0'.b
+      else
+        output << input_decimal.fractional_part.round(3).to_s # FIXME: "rounding the final digit to the nearest value, or to the even value if it is equidistant"?
+      end
       output
     end
 

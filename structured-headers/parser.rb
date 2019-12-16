@@ -196,7 +196,7 @@ module StructuredHeaders
     # Given an ASCII string input_string, return a number. input_string is
     # modified to remove the parsed value.
     #
-    # NOTE: This algorithm parses both Integers (Section 3.3.1) and Floats
+    # NOTE: This algorithm parses both Integers (Section 3.3.1) and Decimals
     # (Section 3.3.2), and returns the corresponding structure.
     #
     def self::parse_number input_string
@@ -215,21 +215,21 @@ module StructuredHeaders
           input_number << char
         elsif type == :integer && char == '.'
           input_number << char
-          type = :float
+          type = :decimal
         else
           input_string.replace(char + input_string)
           break
         end
         raise SH::ParseError, "parse_number: integer too long #{input_number}" if type == :integer && input_number.length > 15
-        raise SH::ParseError, "parse_number: float too long #{input_number}" if type == :float && input_number.length > 16
+        raise SH::ParseError, "parse_number: decimal too long #{input_number}" if type == :decimal && input_number.length > 16
       end
       if type == :integer
         output_number = SH::Integer.new(input_number.to_i(10) * sign)
         raise SH::ParseError, "parse_number: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
         raise SH::ParseError, "parse_number: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
-        raise SH::ParseError, "parse_number: too many digits after decimal point in #{input_numer}" if input_number =~ /\.\d{7}/
-        output_number = SH::Float.new(input_number.to_f * sign)
+        raise SH::ParseError, "parse_number: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
+        output_number = SH::Decimal.new(input_number.to_f * sign)
       end
       output_number
     end

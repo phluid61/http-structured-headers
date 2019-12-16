@@ -12,7 +12,7 @@ require_relative 'structured-headers/item'
 require_relative 'structured-headers/boolean'
 require_relative 'structured-headers/byte-sequence'
 require_relative 'structured-headers/integer'
-require_relative 'structured-headers/float'
+require_relative 'structured-headers/decimal'
 require_relative 'structured-headers/string'
 require_relative 'structured-headers/token'
 

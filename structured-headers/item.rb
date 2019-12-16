@@ -5,12 +5,12 @@ module StructuredHeaders
 
     def self::new obj
       case obj
-      when SH::Integer, SH::Float, SH::String, SH::Token, SH::Boolean, SH::ByteSequence
+      when SH::Integer, SH::Decimal, SH::String, SH::Token, SH::Boolean, SH::ByteSequence
         return obj
       when ::Integer
         return SH::Integer.new obj
       when ::Numeric
-        return SH::Float.new obj
+        return SH::Decimal.new obj
       when ::String
         if SH::String.match? obj
           return SH::String.new obj
