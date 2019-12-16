@@ -5,7 +5,7 @@ module StructuredHeaders
 
     def initialize decimal
       float = decimal.to_f
-      raise "decimal out of range #{decimal.inspect}" if float.to_i > 999_999_999_999
+      raise "decimal out of range #{decimal.inspect}" if float.to_i.abs > 999_999_999_999
 
       @to_s = ('%.3f' % float).sub(/(?<=\d)0+\z/, '').freeze
       @to_r = Rational(@to_s)
