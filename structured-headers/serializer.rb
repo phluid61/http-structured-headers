@@ -196,7 +196,7 @@ module StructuredHeaders
       output << input_decimal.integer_part.to_s
       raise SH::SerializationError, "serialize_decimal: too many digits in integer part" if input_decimal.integer_part.to_s.length > 12
       output << '.'.b
-      if input_decimal.fraction_part.zero?
+      if input_decimal.fractional_part.zero?
         output << '0'.b
       else
         output << input_decimal.fractional_part.round(3).to_s # FIXME: "rounding the final digit to the nearest value, or to the even value if it is equidistant"?
