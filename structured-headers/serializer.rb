@@ -108,8 +108,8 @@ module StructuredHeaders
     #
     def self::serialize_key input_key
       input_key = SH::Key.new(input_key).value
-      # if input_key is not a sequence of characters, or contains characters not in lcalpha,
-      # DIGIT, "_", "-", ".", or "*", fail serialization -- impossible if it's an SH::Key
+      # 0. If input_key is not a sequence of characters, or contains characters not in lcalpha, DIGIT, "_", "-", ".", or "*" fail serialisation.
+      # 1. If the first character of input_key is not lcalpha, fail parsing.
       output = SH::empty_string
       output << input_key
       output
