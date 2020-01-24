@@ -185,7 +185,7 @@ module StructuredHeaders
       raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
       output_string = SH::empty_string
       while !input_string.empty?
-        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9*_-]/
+        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9_\-.*]/
         char = input_string.slice!(0)
         output_string << char
       end
