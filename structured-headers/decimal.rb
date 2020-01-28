@@ -4,10 +4,10 @@ module StructuredHeaders
     include SH::Item
 
     def initialize decimal
-      float = decimal.to_f
-      raise "decimal out of range #{decimal.inspect}" if float.to_i.abs > 999_999_999_999
+      raw = Rational(decimal)
+      raise "decimal out of range #{decimal.inspect}" if raw.to_i.abs > 999_999_999_999
 
-      @to_s = ('%.3f' % float).sub(/(?<=\d)0+\z/, '').freeze
+      @to_s = ('%.3f' % raw.round(3, half: :even).to_f).sub(/(?<=\d)0+\z/, '').freeze
       @to_r = Rational(@to_s)
       @to_f = @to_r.to_f
       @abs = @to_r.abs
