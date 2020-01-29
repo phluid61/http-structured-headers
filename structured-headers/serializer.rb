@@ -199,7 +199,7 @@ module StructuredHeaders
       if input_decimal.fractional_part.zero?
         output << '0'.b
       else
-        output << input_decimal.fractional_part.round(3).to_s # FIXME: "rounding the final digit to the nearest value, or to the even value if it is equidistant"?
+        output << input_decimal.fractional_part_s
       end
       output
     end
