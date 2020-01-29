@@ -14,7 +14,7 @@ module StructuredHeaders
       when SH::Parameters
         # noop
       when Hash
-        params = SH::Paramaters.new(params)
+        params = SH::Parameters.new(params)
       else
         raise "invalid Parameters #{params.inspect}"
       end
