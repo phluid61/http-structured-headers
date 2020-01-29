@@ -18,7 +18,7 @@ module StructuredHeaders
       @fractional_part_s = b.sub(/(?<=\d)0+\z/, '').freeze
 
       @integer_part = @integer_part_s.to_i
-      @fractional_part = @fractional_part_s.to_i
+      @fractional_part = ('0.' + @fractional_part_s).to_f
     end
     attr_reader :to_s, :to_r, :to_f, :abs
     attr_reader :integer_part, :integer_part_s
