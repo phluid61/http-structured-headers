@@ -12,18 +12,47 @@ $failed = 0
 FAILURE = Object.new
 def FAILURE.inspect() 'failure'; end
 
-def __cast__ result
-  case result
-  when Array
-    result.map {|item| __cast__ item }
-  when Hash
-    result.map {|k, v| [k, __cast__(v)] }.to_h
-  when StructuredHeaders::Token, Symbol
-    result.to_s
-  when StructuredHeaders::ByteSequence
-    Base32.strict_encode32 result.string
+def __uncast__ obj, type
+  case type
+  when 'list'
+    ary = obj.map {|item| __uncast__(item, 'item-or-innerlist') }
+    SH::List.new ary
+  when 'dictionary'
+    hsh = obj.each_pair.map {|k, v| [__uncast__(k, 'key'), __uncast__(v, 'item-or-innerlist')] }
+    Dictionary.new hsh
+  when 'item', 'item-or-innerlist'
+    # params
+    value, params, *rest = obj
+    raise "dunno why item-or-innerlist #{obj.inspect} has more than two elements" unless rest.empty?
+    if value.is_a? Array
+      value = __uncast__(value, 'bare-innerlist')
+    else
+      value = __uncast__(value, 'bare-item')
+    end
+    value.parameters = params
+    value
+  when 'bare-innerlist' # FIXME: this isn't a thing
+    ary = obj.maph {|item| __uncast__(item, 'item-or-innerlist') } # FIXME: can't be an innerlist
+    SH::InnerList.new ary
+  when 'bare-item'
+    if obj.is_a? Hash
+      case obj['__type']
+      when 'token'
+        SH::Token.new obj['value']
+      when 'binary'
+        SH::ByteSequence.new Base32.decode32(obj['value'])
+      else
+        raise "dunno what bare-item #{obj.inspect} is"
+      end
+    elsif obj.is_a? String
+      SH::String.new obj
+    else
+      SH::Item.new obj
+    end
+  when 'key'
+    SH::Key.new obj
   else
-    result
+    raise "dunno what #{type} #{obj.inspect} is"
   end
 end
 
@@ -31,30 +60,46 @@ Dir['tests/*.json'].each do |testfile|
   json = File.read(testfile)
   tests = JSON.parse(json)
   tests.each do |test|
-    next if test['must_fail']
+    next if test['must_fail'] && test['raw']
 
     $total += 1
 
     raw = test['raw']
-    raw = raw.join(',') if raw.is_a? Array
+    if raw.nil?
+      header_type = test['header_type']
+      header_type = 'list' if header_type == 'param-list'
 
-    header_type = test['header_type']
-    header_type = 'list' if header_type == 'param-list'
+      parsed = result = FAILURE
+      begin
+        parsed = __uncast__(test['expected'], header_type)
+        result = SH::Serializer.serialize parsed
+        result = [result].compact
+        error  = nil
+      rescue => ex
+        puts ex.full_message(order: :bottom) unless test['must_fail'] || test['can_fail']
+        error = ex
+      end
+    else
+      raw = raw.join(',') if raw.is_a? Array
 
-    parsed = result = FAILURE
-    begin
-      parsed = SH::Parser.parse raw, header_type
-      result = SH::Serializer.serialize parsed
-      result = [result].compact
-      error  = nil
-    rescue => ex
-      puts ex.full_message(order: :bottom)
-      error = ex
+      header_type = test['header_type']
+      header_type = 'list' if header_type == 'param-list'
+
+      parsed = result = FAILURE
+      begin
+        parsed = SH::Parser.parse raw, header_type
+        result = SH::Serializer.serialize parsed
+        result = [result].compact
+        error  = nil
+      rescue => ex
+        puts ex.full_message(order: :bottom)
+        error = ex
+      end
     end
 
     expect = test[test.include?('canonical') ? 'canonical' : 'raw']
 
-    if !error && result == expect
+    if (!error && result == expect) || (error && (test['must_fail'] || test['can_fail']))
       $passed += 1
       if ENV['VERBOSE']
         puts G("PASS: #{test['name']}")

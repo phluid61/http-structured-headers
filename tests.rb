@@ -60,6 +60,8 @@ Dir['tests/*.json'].each do |testfile|
   json = File.read(testfile)
   tests = JSON.parse(json)
   tests.each do |test|
+    next if test['raw'].nil?
+
     $total += 1
 
     raw = test['raw']
