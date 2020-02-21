@@ -56,7 +56,7 @@ def __uncast__ obj, type
   end
 end
 
-Dir['tests/*.json'].each do |testfile|
+Dir['tests/**/*.json'].each do |testfile|
   json = File.read(testfile)
   tests = JSON.parse(json)
   tests.each do |test|
