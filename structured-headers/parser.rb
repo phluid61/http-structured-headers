@@ -103,7 +103,6 @@ module StructuredHeaders
       dictionary = SH::Dictionary.new
       while !input_string.empty?
         this_key = parse_key(input_string)
-        raise SH::ParseError, "parse_dictionary: duplicate key #{this_key.inspect}" if dictionary.key? this_key
         if input_string.slice(0) == '='
           input_string.slice!(0)
           member = parse_item_or_inner_list(input_string)
@@ -166,7 +165,6 @@ module StructuredHeaders
         input_string.slice!(0)
         _discard_leading_SP(input_string)
         param_name = parse_key(input_string)
-        raise "parse_parameters: duplicate key in parameters #{param_name.inspect}" if parameters.key? param_name
         param_value = SH::Boolean.new(true)
         if input_string.slice(0) == '='
           input_string.slice!(0)
