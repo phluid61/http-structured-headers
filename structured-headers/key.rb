@@ -7,7 +7,7 @@ module StructuredHeaders
       else
         value = "#{value.to_str}".b.freeze
       end
-      raise %{invalid key #{value.inspect}, must match: lcalpha *( lcalpha / DIGIT / "_" / "-" / "." / "*" )} if value !~ /\A[a-z][a-z0-9_\-.*]*\z/
+      raise %{invalid key #{value.inspect}, must match: ( lcalpha / "*" ) *( lcalpha / DIGIT / "_" / "-" / "." / "*" )} if value !~ /\A[a-z*][a-z0-9_\-.*]*\z/
       @value = value
     end
 

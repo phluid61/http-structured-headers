@@ -1,6 +1,6 @@
 
 module StructuredHeaders
-  SPEC_VERSION = '-16'
+  SPEC_VERSION = '-17'
 
   class SerializationError < RuntimeError
   end

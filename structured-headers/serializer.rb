@@ -35,10 +35,10 @@ module StructuredHeaders
       return if (_type == :dictionary || _type == :list) && obj.empty?
 
       case _type
-      when :dictionary
-        output_string = serialize_dictionary(obj)
       when :list
         output_string = serialize_list(obj)
+      when :dictionary
+        output_string = serialize_dictionary(obj)
       when :item
         output_string = serialize_item(obj)
       else
@@ -54,13 +54,13 @@ module StructuredHeaders
     #
     def self::serialize_list input_list
       output = SH::empty_string
-      input_list.each_member.with_index do |member_value, idx|
+      input_list.each_member.with_index do |member_value, _idx|
         if member_value.is_a? SH::InnerList
           output << serialize_inner_list(member_value)
         else
           output << serialize_item(member_value)
         end
-        if idx < (input_list.length - 1)
+        if _idx < (input_list.length - 1)
           output << COMMA
           output << WS
         end
@@ -75,9 +75,9 @@ module StructuredHeaders
     #
     def self::serialize_inner_list inner_list
       output = (+'(').force_encoding(Encoding::US_ASCII)
-      inner_list.each_member.with_index do |member_value, idx|
+      inner_list.each_member.with_index do |member_value, _idx|
         output << serialize_item(member_value)
-        output << WS if idx < (inner_list.length - 1)
+        output << WS if _idx < (inner_list.length - 1)
       end
       output << ')'.b
       output << serialize_parameters(inner_list.parameters)
@@ -96,7 +96,7 @@ module StructuredHeaders
         output << serialize_key(param_name)
         if !param_value.is_a?(SH::Boolean) || param_value.false?
           output << '='.b
-          output << serialize_item(param_value)
+          output << serialize_bare_item(param_value)
         end
       end
       output
@@ -108,8 +108,9 @@ module StructuredHeaders
     #
     def self::serialize_key input_key
       input_key = SH::Key.new(input_key).value
-      # 0. If input_key is not a sequence of characters, or contains characters not in lcalpha, DIGIT, "_", "-", ".", or "*" fail serialisation.
-      # 1. If the first character of input_key is not lcalpha, fail parsing.
+      # 1. Convert input_key into a sequence of ASCII characters; if conversion fails, fail serialization.
+      # 2. If input_key contains characters not in lcalpha, DIGIT, “_”, “-“, “.”, or “*” fail serialization.
+      # 3. If the first character of input_key is not lcalpha or “*”, fail serialization.
       output = SH::empty_string
       output << input_key
       output
@@ -122,9 +123,11 @@ module StructuredHeaders
     #
     def self::serialize_dictionary input_dictionary
       output = SH::empty_string
-      input_dictionary.each_member.with_index do |(member_name, member_value), idx|
+      input_dictionary.each_member.with_index do |(member_name, member_value), _idx|
         output << serialize_key(member_name)
-        if !member_value.is_a?(SH::Boolean) || member_value.false? || member_value.parameters?
+        if member_value.is_a?(SH::Boolean) && member_value.true?
+          output << serialize_parameters(member_value.parameters)
+        else
           output << '='.b
           if member_value.is_a? SH::InnerList
             output << serialize_inner_list(member_value)
@@ -132,7 +135,7 @@ module StructuredHeaders
             output << serialize_item(member_value)
           end
         end
-        if idx < (input_dictionary.length - 1)
+        if _idx < (input_dictionary.length - 1)
           output << COMMA
           output << WS
         end
@@ -191,10 +194,12 @@ module StructuredHeaders
     # use in a HTTP header value.
     #
     def self::serialize_decimal input_decimal
+      # 1. If input_decimal is not a decimal number, fail serialization.
+      # 2. If input_decimal has more than three significant digits to the right of the decimal point, round it to three decimal places, rounding the final digit to the nearest value, or to the even value if it is equidistant.
+      # 3. If input_decimal has more than 12 significant digits to the left of the decimal point after rounding, fail serialization.
       output = SH::empty_string
       output << '-'.b if input_decimal.negative?
-      output << input_decimal.integer_part.to_s
-      raise SH::SerializationError, "serialize_decimal: too many digits in integer part" if input_decimal.integer_part.to_s.length > 12
+      output << input_decimal.integer_part_s
       output << '.'.b
       if input_decimal.fractional_part.zero?
         output << '0'.b
@@ -209,6 +214,7 @@ module StructuredHeaders
     # use in a HTTP header value.
     #
     def self::serialize_string input_string
+      # 1. Convert input_string into a sequence of ASCII characters; if conversion fails, fail serialization.
       raise SH::SerializationError, "serialize_string: invalid characters" if input_string.string =~ /[\x00-\x1f\x7f]/
       output = SH::empty_string
       output << DQUOTE
@@ -227,7 +233,8 @@ module StructuredHeaders
     # use in a HTTP header value.
     #
     def self::serialize_token input_token
-      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[!#$%'*+.^_`|~0-9A-Za-z:/-]}
+      # 1. Convert input_token into a sequence of ASCII characters; if conversion fails, fail serialization.
+      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[A-Za-z*][!#$%'*+.^_`|~0-9A-Za-z:/-]*}
       output = SH::empty_string
       output << input_token.to_s
       output
@@ -238,7 +245,7 @@ module StructuredHeaders
     # suitable for use in a HTTP header value.
     #
     def self::serialize_byte_sequence input_bytes
-      # check type -- not needed here
+      # 1. If input_bytes is not a sequence of bytes, fail serialization.
       output = SH::empty_string
       output << ':'.b
       output << Base64.strict_encode64(input_bytes.to_s)
@@ -251,7 +258,7 @@ module StructuredHeaders
     # for use in a HTTP header value.
     #
     def self::serialize_boolean input_boolean
-      # check type -- not needed here
+      # 1. If input_boolean is not a boolean, fail serialization.
       output = SH::empty_string
       output << '?'
       output << '1' if input_boolean.true?

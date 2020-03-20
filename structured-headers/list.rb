@@ -16,6 +16,10 @@ module StructuredHeaders
       @array.empty?
     end
 
+    def last
+      @array.last
+    end
+
     def append list_member
       case list_member
       when SH::InnerList, SH::Item

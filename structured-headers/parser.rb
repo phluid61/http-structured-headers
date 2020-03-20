@@ -51,7 +51,7 @@ module StructuredHeaders
         members.append parse_item_or_inner_list(input_string)
         _discard_leading_SP(input_string)
         return members if input_string.empty?
-        raise SH::ParseError, "parse_list: expected comma after list member" if input_string.slice!(0) != ','
+        raise SH::ParseError, "parse_list: expected comma after list member #{SH::Serializer.serialize members.last} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
         _discard_leading_SP(input_string)
         raise SH::ParseError, "parse_list: unexpected trailing comma" if input_string.empty?
       end
@@ -108,13 +108,13 @@ module StructuredHeaders
           member = parse_item_or_inner_list(input_string)
         else
           value = SH::Boolean.new(true)
-          parameters = SH::Parameters.new
+          parameters = parse_parameters(input_string)
           member = value.tap{|v| v.parameters = parameters }
         end
         dictionary.set this_key, member
         _discard_leading_SP(input_string)
         return dictionary if input_string.empty?
-        raise SH::ParseError, "parse_dictionary: expected ',' after value" if input_string.slice!(0) != ','
+        raise SH::ParseError, "parse_dictionary: expected ',' after value #{this_key}=#{SH::Serializer.serialize member} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
         _discard_leading_SP(input_string)
         raise SH::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
       end
@@ -139,7 +139,7 @@ module StructuredHeaders
     def self::parse_bare_item input_string
       case input_string.slice(0)
       when /\A[-0-9]/
-        parse_number(input_string)
+        parse_integer_or_decimal(input_string)
       when '"'
         parse_string(input_string)
       when ':'
@@ -180,7 +180,7 @@ module StructuredHeaders
     # is modified to remove the parsed value.
     #
     def self::parse_key input_string
-      raise SH::ParseError, "parse_key: first character not lcalpha #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z]/
+      raise SH::ParseError, "parse_key: first character not lcalpha or * #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z*]/
       output_string = SH::empty_string
       while !input_string.empty?
         return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9_\-.*]/
@@ -191,13 +191,13 @@ module StructuredHeaders
     end
 
     ##
-    # Given an ASCII string input_string, return a number. input_string is
+    # Given an ASCII string input_string, return an Integer or Decimal. input_string is
     # modified to remove the parsed value.
     #
     # NOTE: This algorithm parses both Integers (Section 3.3.1) and Decimals
     # (Section 3.3.2), and returns the corresponding structure.
     #
-    def self::parse_number input_string
+    def self::parse_integer_or_decimal input_string
       type = :integer
       sign = 1
       input_number = SH::empty_string
@@ -205,28 +205,29 @@ module StructuredHeaders
         input_string.slice!(0)
         sign = -1
       end
-      raise SH::ParseError, "parse_number: no digits" if input_string.empty?
-      raise SH::ParseError, "parse_number: not a digit #{input_string.slice(0).inspect}" if input_string !~ /\A[0-9]/
+      raise SH::ParseError, "parse_integer_or_decimal: no digits" if input_string.empty?
+      raise SH::ParseError, "parse_integer_or_decimal: not a digit #{input_string.slice(0).inspect}" if input_string !~ /\A[0-9]/
       while !input_string.empty?
         char = input_string.slice!(0)
         if char =~ /\A[0-9]/
           input_number << char
         elsif type == :integer && char == '.'
+          raise SH::ParseError, "parse_integer_or_decimal: too many digits before ." if input_number.length > 12
           input_number << char
           type = :decimal
         else
           input_string.replace(char + input_string)
           break
         end
-        raise SH::ParseError, "parse_number: integer too long #{input_number}" if type == :integer && input_number.length > 15
-        raise SH::ParseError, "parse_number: decimal too long #{input_number}" if type == :decimal && input_number.length > 16
+        raise SH::ParseError, "parse_integer_or_decimal: integer too long #{input_number}" if type == :integer && input_number.length > 15
+        raise SH::ParseError, "parse_integer_or_decimal: decimal too long #{input_number}" if type == :decimal && input_number.length > 16
       end
       if type == :integer
         output_number = SH::Integer.new(input_number.to_i(10) * sign)
-        raise SH::ParseError, "parse_number: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
+        raise SH::ParseError, "parse_integer_or_decimal: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
-        raise SH::ParseError, "parse_number: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
-        raise SH::ParseError, "parse_number: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
+        raise SH::ParseError, "parse_integer_or_decimal: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
+        raise SH::ParseError, "parse_integer_or_decimal: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
         output_number = SH::Decimal.new(input_number.to_f * sign)
       end
       output_number
@@ -243,13 +244,10 @@ module StructuredHeaders
       while !input_string.empty?
         char = input_string.slice!(0)
         if char == '\\'
-          if input_string.empty?
-            raise SH::ParseError, "parse_string: unterminated string"
-          else
-            next_char = input_string.slice!(0)
-            raise SH::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
-            output_string << next_char
-          end
+          raise SH::ParseError, "parse_string: unterminated string" if input_string.empty?
+          next_char = input_string.slice!(0)
+          raise SH::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
+          output_string << next_char
         elsif char == '"'
           return SH::String.new(output_string)
         elsif char =~ /\A[\x00-\x1F\x7F]/
