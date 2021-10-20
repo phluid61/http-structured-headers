@@ -2,7 +2,12 @@
 HTTP Structured Headers
 =======================
 
-An implementation of the algorithms specified in [RFC8941]
+An implementation of the algorithms specified in [RFC 8941][RFC8941].
+
+This implementation is not the most efficient or necessarily the most sensible,
+instead it is as close as I could get to writing the algorithms from the RFC
+directly into Ruby.  This was useful in debugging the algorithms as they were
+being written.
 
 Includes a copy of a simple Base32 library I wrote.
 
