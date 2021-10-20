@@ -23,7 +23,7 @@ def __cast__ result, ignore_parameters=false
       else
         [__cast__(k), __cast__(v, true)]
       end
-    end.to_h
+    end
   when SH::List
     result.map {|item| __cast__(item) }
   when SH::InnerList
@@ -31,9 +31,9 @@ def __cast__ result, ignore_parameters=false
   when Array
     result.map {|item| __cast__(item) }
   when SH::Dictionary
-    result.map {|(k, v)| [__cast__(k), __cast__(v)] }.to_h
+    result.map {|(k, v)| [__cast__(k), __cast__(v)] }
   when Hash
-    result.map {|k, v| [k, __cast__(v)] }.to_h
+    result.map {|k, v| [k, __cast__(v)] }
   when SH::Integer
     result.to_i.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when SH::Decimal
