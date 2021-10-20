@@ -11,6 +11,8 @@ module StructuredHeaders
 
     def parameters= params
       case params
+      when Array
+        params = params.to_h
       when SH::Parameters
         # noop
       when Hash
