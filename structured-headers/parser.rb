@@ -5,9 +5,14 @@ module StructuredHeaders
 
   module Parser
     LEADING_SP = /\A\x20+/
+    LEADING_OWS = /\A[\x20\x09]+/
 
     def self::_discard_leading_SP input_string
       input_string.sub!(LEADING_SP, '')
+    end
+
+    def self::_discard_leading_OWS input_string
+      input_string.sub!(LEADING_OWS, '')
     end
 
     def self::_bytes_to_string bytes
@@ -49,10 +54,10 @@ module StructuredHeaders
       members = SH::List.new
       while !input_string.empty?
         members.append parse_item_or_inner_list(input_string)
-        _discard_leading_SP(input_string)
+        _discard_leading_OWS(input_string)
         return members if input_string.empty?
         raise SH::ParseError, "parse_list: expected comma after list member #{SH::Serializer.serialize members.last} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
-        _discard_leading_SP(input_string)
+        _discard_leading_OWS(input_string)
         raise SH::ParseError, "parse_list: unexpected trailing comma" if input_string.empty?
       end
       members
@@ -112,10 +117,10 @@ module StructuredHeaders
           member = value.tap{|v| v.parameters = parameters }
         end
         dictionary.set this_key, member
-        _discard_leading_SP(input_string)
+        _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
         raise SH::ParseError, "parse_dictionary: expected ',' after value #{this_key}=#{SH::Serializer.serialize member} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
-        _discard_leading_SP(input_string)
+        _discard_leading_OWS(input_string)
         raise SH::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
       end
       dictionary
