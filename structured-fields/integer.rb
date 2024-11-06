@@ -1,7 +1,7 @@
 
-module StructuredHeaders
+module StructuredFields
   class Integer
-    include SH::Item
+    include StructuredFields::Item
 
     def initialize int
       @int = int.to_i

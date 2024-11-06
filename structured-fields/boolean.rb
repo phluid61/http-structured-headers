@@ -1,7 +1,7 @@
 
-module StructuredHeaders
+module StructuredFields
   class Boolean
-    include SH::Item
+    include StructuredFields::Item
 
     def initialize bool
       @bool = !!bool

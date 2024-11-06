@@ -1,7 +1,7 @@
 
-module StructuredHeaders
+module StructuredFields
   class Decimal
-    include SH::Item
+    include StructuredFields::Item
 
     def initialize decimal
       raw = Rational(decimal.is_a?(Float) ? decimal.to_s : decimal) # urgh

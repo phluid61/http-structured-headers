@@ -1,7 +1,7 @@
 
 require 'base64'
 
-module StructuredHeaders
+module StructuredFields
 
   module Serializer
     COMMA  = (+',').force_encoding(Encoding::US_ASCII).freeze
@@ -10,18 +10,18 @@ module StructuredHeaders
 
     def self::_coerce obj
       case obj
-      when SH::Dictionary
+      when StructuredFields::Dictionary
         return [:dictionary, obj]
       when Hash
-        return [:dictionary, SH::Dictionary.new(obj)]
-      when SH::List
+        return [:dictionary, StructuredFields::Dictionary.new(obj)]
+      when StructuredFields::List
         return [:list, obj]
       when Array
-        return [:list, SH::List.new(obj)]
-      when SH::Item
+        return [:list, StructuredFields::List.new(obj)]
+      when StructuredFields::Item
         return [:item, obj]
       else
-        return [:item, SH::Item.new(obj)]
+        return [:item, StructuredFields::Item.new(obj)]
       end
     end
 
@@ -42,7 +42,7 @@ module StructuredHeaders
       when :item
         output_string = serialize_item(obj)
       else
-        raise SH::SerializationError, "serialize: unknown type #{_type.inspect}"
+        raise StructuredFields::SerializationError, "serialize: unknown type #{_type.inspect}"
       end
 
       output_string.b
@@ -53,9 +53,9 @@ module StructuredHeaders
     # return an ASCII string suitable for use in a HTTP header value.
     #
     def self::serialize_list input_list
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       input_list.each_member.with_index do |member_value, _idx|
-        if member_value.is_a? SH::InnerList
+        if member_value.is_a? StructuredFields::InnerList
           output << serialize_inner_list(member_value)
         else
           output << serialize_item(member_value)
@@ -90,11 +90,11 @@ module StructuredHeaders
     # use in a HTTP header value.
     #
     def self::serialize_parameters parameters
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       parameters.each_pair do |param_name, param_value|
         output << ';'.b
         output << serialize_key(param_name)
-        if !param_value.is_a?(SH::Boolean) || param_value.false?
+        if !param_value.is_a?(StructuredFields::Boolean) || param_value.false?
           output << '='.b
           output << serialize_bare_item(param_value)
         end
@@ -107,11 +107,11 @@ module StructuredHeaders
     # a HTTP header value.
     #
     def self::serialize_key input_key
-      input_key = SH::Key.new(input_key).value
+      input_key = StructuredFields::Key.new(input_key).value
       # 1. Convert input_key into a sequence of ASCII characters; if conversion fails, fail serialization.
       # 2. If input_key contains characters not in lcalpha, DIGIT, “_”, “-“, “.”, or “*” fail serialization.
       # 3. If the first character of input_key is not lcalpha or “*”, fail serialization.
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       output << input_key
       output
     end
@@ -122,14 +122,14 @@ module StructuredHeaders
     # return an ASCII string suitable for use in a HTTP header value.
     #
     def self::serialize_dictionary input_dictionary
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       input_dictionary.each_member.with_index do |(member_name, member_value), _idx|
         output << serialize_key(member_name)
-        if member_value.is_a?(SH::Boolean) && member_value.true?
+        if member_value.is_a?(StructuredFields::Boolean) && member_value.true?
           output << serialize_parameters(member_value.parameters)
         else
           output << '='.b
-          if member_value.is_a? SH::InnerList
+          if member_value.is_a? StructuredFields::InnerList
             output << serialize_inner_list(member_value)
           else
             output << serialize_item(member_value)
@@ -148,7 +148,7 @@ module StructuredHeaders
     # return an ASCII string suitable for use in a HTTP header value.
     #
     def self::serialize_item input_item
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       output << serialize_bare_item(input_item)
       output << serialize_parameters(input_item.parameters)
       output
@@ -160,20 +160,20 @@ module StructuredHeaders
     #
     def self::serialize_bare_item input_item
       case input_item
-      when SH::Integer
+      when StructuredFields::Integer
         return serialize_integer(input_item)
-      when SH::Decimal
+      when StructuredFields::Decimal
         return serialize_decimal(input_item)
-      when SH::String
+      when StructuredFields::String
         return serialize_string(input_item)
-      when SH::Token
+      when StructuredFields::Token
         return serialize_token(input_item)
-      when SH::Boolean
+      when StructuredFields::Boolean
         return serialize_boolean(input_item)
-      when SH::ByteSequence
+      when StructuredFields::ByteSequence
         return serialize_byte_sequence(input_item)
       else
-        raise SH::SerializationError, "serialize_item: unrecognised item #{input_item.inspect}"
+        raise StructuredFields::SerializationError, "serialize_item: unrecognised item #{input_item.inspect}"
       end
     end
 
@@ -182,8 +182,8 @@ module StructuredHeaders
     # for use in a HTTP header value.
     #
     def self::serialize_integer input_integer
-      raise SH::SerializationError, "serialize_integer: integer out of range" if input_integer.int < -999_999_999_999_999 || input_integer.int > 999_999_999_999_999
-      output = SH::empty_string
+      raise StructuredFields::SerializationError, "serialize_integer: integer out of range" if input_integer.int < -999_999_999_999_999 || input_integer.int > 999_999_999_999_999
+      output = StructuredFields::empty_string
       output << '-'.b if input_integer.negative?
       output << input_integer.abs.to_s(10)
       output
@@ -197,7 +197,7 @@ module StructuredHeaders
       # 1. If input_decimal is not a decimal number, fail serialization.
       # 2. If input_decimal has more than three significant digits to the right of the decimal point, round it to three decimal places, rounding the final digit to the nearest value, or to the even value if it is equidistant.
       # 3. If input_decimal has more than 12 significant digits to the left of the decimal point after rounding, fail serialization.
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       output << '-'.b if input_decimal.negative?
       output << input_decimal.integer_part_s
       output << '.'.b
@@ -215,8 +215,8 @@ module StructuredHeaders
     #
     def self::serialize_string input_string
       # 1. Convert input_string into a sequence of ASCII characters; if conversion fails, fail serialization.
-      raise SH::SerializationError, "serialize_string: invalid characters" if input_string.string =~ /[\x00-\x1f\x7f]/
-      output = SH::empty_string
+      raise StructuredFields::SerializationError, "serialize_string: invalid characters" if input_string.string =~ /[\x00-\x1f\x7f]/
+      output = StructuredFields::empty_string
       output << DQUOTE
       input_string.each_char do |char|
         if char == '\\' || char == '"'
@@ -234,8 +234,8 @@ module StructuredHeaders
     #
     def self::serialize_token input_token
       # 1. Convert input_token into a sequence of ASCII characters; if conversion fails, fail serialization.
-      raise SH::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[A-Za-z*][!#$%'*+.^_`|~0-9A-Za-z:/-]*}
-      output = SH::empty_string
+      raise StructuredFields::SerializationError, "serialize_token: invalid characters" if input_token.string !~ %r{[A-Za-z*][!#$%'*+.^_`|~0-9A-Za-z:/-]*}
+      output = StructuredFields::empty_string
       output << input_token.to_s
       output
     end
@@ -246,7 +246,7 @@ module StructuredHeaders
     #
     def self::serialize_byte_sequence input_bytes
       # 1. If input_bytes is not a sequence of bytes, fail serialization.
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       output << ':'.b
       output << Base64.strict_encode64(input_bytes.to_s)
       output << ':'.b
@@ -259,7 +259,7 @@ module StructuredHeaders
     #
     def self::serialize_boolean input_boolean
       # 1. If input_boolean is not a boolean, fail serialization.
-      output = SH::empty_string
+      output = StructuredFields::empty_string
       output << '?'
       output << '1' if input_boolean.true?
       output << '0' if input_boolean.false?

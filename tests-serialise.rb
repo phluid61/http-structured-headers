@@ -1,5 +1,5 @@
 
-require_relative 'structured-headers'
+require_relative 'structured-fields'
 require_relative 'libs/base32'
 require_relative 'libs/colours'
 
@@ -16,7 +16,7 @@ def __uncast__ obj, type
   case type
   when 'list'
     ary = obj.map {|item| __uncast__(item, 'item-or-innerlist') }
-    SH::List.new ary
+    StructuredFields::List.new ary
   when 'dictionary'
     hsh = obj.each_pair.map {|k, v| [__uncast__(k, 'key'), __uncast__(v, 'item-or-innerlist')] }
     Dictionary.new hsh
@@ -33,24 +33,24 @@ def __uncast__ obj, type
     value
   when 'bare-innerlist' # FIXME: this isn't a thing
     ary = obj.maph {|item| __uncast__(item, 'item-or-innerlist') } # FIXME: can't be an innerlist
-    SH::InnerList.new ary
+    StructuredFields::InnerList.new ary
   when 'bare-item'
     if obj.is_a? Hash
       case obj['__type']
       when 'token'
-        SH::Token.new obj['value']
+        StructuredFields::Token.new obj['value']
       when 'binary'
-        SH::ByteSequence.new Base32.decode32(obj['value'])
+        StructuredFields::ByteSequence.new Base32.decode32(obj['value'])
       else
         raise "dunno what bare-item #{obj.inspect} is"
       end
     elsif obj.is_a? String
-      SH::String.new obj
+      StructuredFields::String.new obj
     else
-      SH::Item.new obj
+      StructuredFields::Item.new obj
     end
   when 'key'
-    SH::Key.new obj
+    StructuredFields::Key.new obj
   else
     raise "dunno what #{type} #{obj.inspect} is"
   end
@@ -72,7 +72,7 @@ Dir['tests/**/*.json'].each do |testfile|
       parsed = result = FAILURE
       begin
         parsed = __uncast__(test['expected'], header_type)
-        result = SH::Serializer.serialize parsed
+        result = StructuredFields::Serializer.serialize parsed
         result = [result].compact
         error  = nil
       rescue => ex
@@ -87,8 +87,8 @@ Dir['tests/**/*.json'].each do |testfile|
 
       parsed = result = FAILURE
       begin
-        parsed = SH::Parser.parse raw, header_type
-        result = SH::Serializer.serialize parsed
+        parsed = StructuredFields::Parser.parse raw, header_type
+        result = StructuredFields::Serializer.serialize parsed
         result = [result].compact
         error  = nil
       rescue => ex

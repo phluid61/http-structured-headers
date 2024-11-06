@@ -1,5 +1,5 @@
 
-module StructuredHeaders
+module StructuredFields
   class Key
     def initialize value
       if value.is_a? Symbol

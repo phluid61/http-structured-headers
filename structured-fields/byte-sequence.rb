@@ -1,7 +1,7 @@
 
-module StructuredHeaders
+module StructuredFields
   class ByteSequence
-    include SH::Item
+    include StructuredFields::Item
 
     def initialize string
       @string = (+"#{string}").b

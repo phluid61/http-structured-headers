@@ -1,8 +1,8 @@
 
-module StructuredHeaders
+module StructuredFields
   module Parameterised
     def parameters
-      @parameters ||= SH::Parameters.new
+      @parameters ||= StructuredFields::Parameters.new
     end
 
     def parameters?
@@ -13,10 +13,10 @@ module StructuredHeaders
       case params
       when Array
         params = params.to_h
-      when SH::Parameters
+      when StructuredFields::Parameters
         # noop
       when Hash
-        params = SH::Parameters.new(params)
+        params = StructuredFields::Parameters.new(params)
       else
         raise "invalid Parameters #{params.inspect}"
       end
@@ -24,7 +24,7 @@ module StructuredHeaders
     end
 
     def strip_parameters!
-      parameters.tap { @parameters = SH::Parameters.new }
+      parameters.tap { @parameters = StructuredFields::Parameters.new }
     end
   end
 end

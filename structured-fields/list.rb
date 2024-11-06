@@ -1,10 +1,9 @@
 
-module StructuredHeaders
-  class InnerList
-    include SH::Parameterised
+module StructuredFields
+  class List
     include Enumerable
 
-    def initialize arr=[], params={}
+    def initialize arr=[]
       @array = []
       arr.each {|v| append v }
     end
@@ -17,13 +16,18 @@ module StructuredHeaders
       @array.empty?
     end
 
+    def last
+      @array.last
+    end
+
     def append list_member
-      # convert list_member to an Item
       case list_member
-      when SH::Item
+      when StructuredFields::InnerList, StructuredFields::Item
         # nop
+      when Array
+        list_member = StructuredFields::InnerList.new list_member
       else
-        list_member = SH::Item.new list_member
+        list_member = StructuredFields::Item.new list_member
       end
       @array << list_member
       self
@@ -38,7 +42,7 @@ module StructuredHeaders
     alias each each_member
 
     def inspect
-      "#<#{self.class.name}: [#{@array.map{|v|v.inspect}.join(' ')}]>"
+      "#<#{self.class.name}: [#{@array.map{|v| v.inspect }.join(', ')}]>"
     end
   end
 end

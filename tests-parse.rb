@@ -1,5 +1,5 @@
 
-require_relative 'structured-headers'
+require_relative 'structured-fields'
 require_relative 'libs/base32'
 require_relative 'libs/colours'
 
@@ -16,7 +16,7 @@ def FAILURE.inspect() 'failure'; end
 
 def __cast__ result, ignore_parameters=false
   case result
-  when SH::Parameters
+  when StructuredFields::Parameters
     result.map do |(k, v)|
       if v.nil?
         [__cast__(k), nil]
@@ -24,29 +24,29 @@ def __cast__ result, ignore_parameters=false
         [__cast__(k), __cast__(v, true)]
       end
     end
-  when SH::List
+  when StructuredFields::List
     result.map {|item| __cast__(item) }
-  when SH::InnerList
+  when StructuredFields::InnerList
     result.map {|item| __cast__(item) }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when Array
     result.map {|item| __cast__(item) }
-  when SH::Dictionary
+  when StructuredFields::Dictionary
     result.map {|(k, v)| [__cast__(k), __cast__(v)] }
   when Hash
     result.map {|k, v| [k, __cast__(v)] }
-  when SH::Integer
+  when StructuredFields::Integer
     result.to_i.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::Decimal
+  when StructuredFields::Decimal
     result.to_f.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::Boolean
+  when StructuredFields::Boolean
     result.bool.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::String
+  when StructuredFields::String
     result.to_s.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::Token
+  when StructuredFields::Token
     result.to_s.self {|v| {'__type'=>'token', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::ByteSequence
+  when StructuredFields::ByteSequence
     Base32.strict_encode32(result.string).self {|v| {'__type'=>'binary', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
-  when SH::Key, Symbol
+  when StructuredFields::Key, Symbol
     result.to_s
 #  #when Date, DateTime, Time
 #  when DateTime
@@ -71,7 +71,7 @@ Dir['tests/**/*.json'].each do |testfile|
     header_type = 'list' if header_type == 'param-list'
 
     begin
-      result = SH::Parser.parse raw, header_type
+      result = StructuredFields::Parser.parse raw, header_type
       result = __cast__ result
       error  = nil
     rescue => ex

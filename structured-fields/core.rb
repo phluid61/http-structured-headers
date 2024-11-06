@@ -1,5 +1,5 @@
 
-module StructuredHeaders
+module StructuredFields
   SPEC_VERSION = '-17'
 
   class SerializationError < RuntimeError
@@ -12,6 +12,4 @@ module StructuredHeaders
     (+'').force_encoding(Encoding::US_ASCII)
   end
 end
-
-SH = StructuredHeaders
 

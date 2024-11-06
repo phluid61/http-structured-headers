@@ -1,5 +1,5 @@
 
-module StructuredHeaders
+module StructuredFields
   class Dictionary
     include Enumerable
 
@@ -21,14 +21,14 @@ module StructuredHeaders
     end
 
     def set member_name, member_value
-      key = SH::Key.new(member_name)
+      key = StructuredFields::Key.new(member_name)
       case member_value
-      when SH::InnerList, SH::Item
+      when StructuredFields::InnerList, StructuredFields::Item
         # nop
       when Array
-        member_value = SH::InnerList.new member_value
+        member_value = StructuredFields::InnerList.new member_value
       else
-        member_value = SH::Item.new member_value
+        member_value = StructuredFields::Item.new member_value
       end
       @hash[key.to_s] = [key, member_value]
       self

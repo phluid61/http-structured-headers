@@ -1,7 +1,7 @@
 
 require 'base64'
 
-module StructuredHeaders
+module StructuredFields
 
   module Parser
     LEADING_SP = /\A\x20+/
@@ -18,7 +18,7 @@ module StructuredHeaders
     def self::_bytes_to_string bytes
       str = bytes.respond_to?(:to_str) ? bytes.to_str : bytes.to_s
       str = (+"#{str}").b
-      raise SH::ParseError, "cannot convert non-ASCII bytes to ASCII: #{bytes.inspect}" unless str.ascii_only?
+      raise StructuredFields::ParseError, "cannot convert non-ASCII bytes to ASCII: #{bytes.inspect}" unless str.ascii_only?
       str.encode!(Encoding::US_ASCII, Encoding::ASCII_8BIT)
     end
 
@@ -39,10 +39,10 @@ module StructuredHeaders
       when 'item', :item
         output = parse_item(input_string)
       #else
-      #  raise SH::ParseError, "parse: unrecognised type #{header_type.inspect}"
+      #  raise StructuredFields::ParseError, "parse: unrecognised type #{header_type.inspect}"
       end
       _discard_leading_SP(input_string)
-      raise SH::ParseError, "parse: input_string is not empty: #{input_string.inspect}" unless input_string.empty?
+      raise StructuredFields::ParseError, "parse: input_string is not empty: #{input_string.inspect}" unless input_string.empty?
       output
     end
 
@@ -51,14 +51,14 @@ module StructuredHeaders
     # parameters) tuples. input_string is modified to remove the parsed value.
     #
     def self::parse_list input_string
-      members = SH::List.new
+      members = StructuredFields::List.new
       while !input_string.empty?
         members.append parse_item_or_inner_list(input_string)
         _discard_leading_OWS(input_string)
         return members if input_string.empty?
-        raise SH::ParseError, "parse_list: expected comma after list member #{SH::Serializer.serialize members.last} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
+        raise StructuredFields::ParseError, "parse_list: expected comma after list member #{StructuredFields::Serializer.serialize members.last} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
         _discard_leading_OWS(input_string)
-        raise SH::ParseError, "parse_list: unexpected trailing comma" if input_string.empty?
+        raise StructuredFields::ParseError, "parse_list: unexpected trailing comma" if input_string.empty?
       end
       members
     end
@@ -83,8 +83,8 @@ module StructuredHeaders
     # tuples. input_string is modified to remove the parsed value.
     #
     def self::parse_inner_list input_string
-      raise SH::ParseError, "parse_inner_list: missing open '('" if input_string.slice!(0) != '('
-      inner_list = SH::InnerList.new
+      raise StructuredFields::ParseError, "parse_inner_list: missing open '('" if input_string.slice!(0) != '('
+      inner_list = StructuredFields::InnerList.new
       while !input_string.empty?
         _discard_leading_SP(input_string)
         if input_string.slice(0) == ')'
@@ -94,9 +94,9 @@ module StructuredHeaders
         end
         item = parse_item(input_string)
         inner_list << item
-        raise SH::ParseError, "parse_inner_list: expected space after item; got #{input_string.slice(0).inspect}" if input_string !~ /\A[\x20)]/
+        raise StructuredFields::ParseError, "parse_inner_list: expected space after item; got #{input_string.slice(0).inspect}" if input_string !~ /\A[\x20)]/
       end
-      raise SH::ParseError, "parse_inner_list: the end of the inner list was not found"
+      raise StructuredFields::ParseError, "parse_inner_list: the end of the inner list was not found"
     end
 
     ##
@@ -105,23 +105,23 @@ module StructuredHeaders
     # is modified to remove the parsed value.
     #
     def self::parse_dictionary input_string
-      dictionary = SH::Dictionary.new
+      dictionary = StructuredFields::Dictionary.new
       while !input_string.empty?
         this_key = parse_key(input_string)
         if input_string.slice(0) == '='
           input_string.slice!(0)
           member = parse_item_or_inner_list(input_string)
         else
-          value = SH::Boolean.new(true)
+          value = StructuredFields::Boolean.new(true)
           parameters = parse_parameters(input_string)
           member = value.tap{|v| v.parameters = parameters }
         end
         dictionary.set this_key, member
         _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
-        raise SH::ParseError, "parse_dictionary: expected ',' after value #{this_key}=#{SH::Serializer.serialize member} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
+        raise StructuredFields::ParseError, "parse_dictionary: expected ',' after value #{this_key}=#{StructuredFields::Serializer.serialize member} #{$foo.inspect}" if ($foo=input_string.slice!(0)) != ','
         _discard_leading_OWS(input_string)
-        raise SH::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
+        raise StructuredFields::ParseError, "parse_dictionary: trailing comma" if input_string.empty?
       end
       dictionary
     end
@@ -154,7 +154,7 @@ module StructuredHeaders
       when /\A[A-Za-z*]/
         parse_token(input_string)
       else
-        raise SH::ParseError, "parse_item: unknown item #{input_string.inspect}"
+        raise StructuredFields::ParseError, "parse_item: unknown item #{input_string.inspect}"
       end
     end
 
@@ -164,13 +164,13 @@ module StructuredHeaders
     # parsed value.
     #
     def self::parse_parameters input_string
-      parameters = SH::Parameters.new
+      parameters = StructuredFields::Parameters.new
       while !input_string.empty?
         break if input_string.slice(0) != ';'
         input_string.slice!(0)
         _discard_leading_SP(input_string)
         param_name = parse_key(input_string)
-        param_value = SH::Boolean.new(true)
+        param_value = StructuredFields::Boolean.new(true)
         if input_string.slice(0) == '='
           input_string.slice!(0)
           param_value = parse_bare_item(input_string)
@@ -185,14 +185,14 @@ module StructuredHeaders
     # is modified to remove the parsed value.
     #
     def self::parse_key input_string
-      raise SH::ParseError, "parse_key: first character not lcalpha or * #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z*]/
-      output_string = SH::empty_string
+      raise StructuredFields::ParseError, "parse_key: first character not lcalpha or * #{input_string.slice(0).inspect}" if input_string !~ /\A[a-z*]/
+      output_string = StructuredFields::empty_string
       while !input_string.empty?
-        return SH::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9_\-.*]/
+        return StructuredFields::Key.new(output_string) if input_string.slice(0) !~ /\A[a-z0-9_\-.*]/
         char = input_string.slice!(0)
         output_string << char
       end
-      SH::Key.new(output_string)
+      StructuredFields::Key.new(output_string)
     end
 
     ##
@@ -205,35 +205,35 @@ module StructuredHeaders
     def self::parse_integer_or_decimal input_string
       type = :integer
       sign = 1
-      input_number = SH::empty_string
+      input_number = StructuredFields::empty_string
       if input_string.slice(0) == '-'
         input_string.slice!(0)
         sign = -1
       end
-      raise SH::ParseError, "parse_integer_or_decimal: no digits" if input_string.empty?
-      raise SH::ParseError, "parse_integer_or_decimal: not a digit #{input_string.slice(0).inspect}" if input_string !~ /\A[0-9]/
+      raise StructuredFields::ParseError, "parse_integer_or_decimal: no digits" if input_string.empty?
+      raise StructuredFields::ParseError, "parse_integer_or_decimal: not a digit #{input_string.slice(0).inspect}" if input_string !~ /\A[0-9]/
       while !input_string.empty?
         char = input_string.slice!(0)
         if char =~ /\A[0-9]/
           input_number << char
         elsif type == :integer && char == '.'
-          raise SH::ParseError, "parse_integer_or_decimal: too many digits before ." if input_number.length > 12
+          raise StructuredFields::ParseError, "parse_integer_or_decimal: too many digits before ." if input_number.length > 12
           input_number << char
           type = :decimal
         else
           input_string.replace(char + input_string)
           break
         end
-        raise SH::ParseError, "parse_integer_or_decimal: integer too long #{input_number}" if type == :integer && input_number.length > 15
-        raise SH::ParseError, "parse_integer_or_decimal: decimal too long #{input_number}" if type == :decimal && input_number.length > 16
+        raise StructuredFields::ParseError, "parse_integer_or_decimal: integer too long #{input_number}" if type == :integer && input_number.length > 15
+        raise StructuredFields::ParseError, "parse_integer_or_decimal: decimal too long #{input_number}" if type == :decimal && input_number.length > 16
       end
       if type == :integer
-        output_number = SH::Integer.new(input_number.to_i(10) * sign)
-        raise SH::ParseError, "parse_integer_or_decimal: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
+        output_number = StructuredFields::Integer.new(input_number.to_i(10) * sign)
+        raise StructuredFields::ParseError, "parse_integer_or_decimal: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
-        raise SH::ParseError, "parse_integer_or_decimal: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
-        raise SH::ParseError, "parse_integer_or_decimal: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
-        output_number = SH::Decimal.new(input_number.to_f * sign)
+        raise StructuredFields::ParseError, "parse_integer_or_decimal: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
+        raise StructuredFields::ParseError, "parse_integer_or_decimal: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
+        output_number = StructuredFields::Decimal.new(input_number.to_f * sign)
       end
       output_number
     end
@@ -243,25 +243,25 @@ module StructuredHeaders
     # input_string is modified to remove the parsed value.
     #
     def self::parse_string input_string
-      output_string = SH::empty_string
-      raise SH::ParseError, "parse_string: missing open '\"'" if input_string.slice(0) != '"'
+      output_string = StructuredFields::empty_string
+      raise StructuredFields::ParseError, "parse_string: missing open '\"'" if input_string.slice(0) != '"'
       input_string.slice!(0)
       while !input_string.empty?
         char = input_string.slice!(0)
         if char == '\\'
-          raise SH::ParseError, "parse_string: unterminated string" if input_string.empty?
+          raise StructuredFields::ParseError, "parse_string: unterminated string" if input_string.empty?
           next_char = input_string.slice!(0)
-          raise SH::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
+          raise StructuredFields::ParseError, "parse_string: invalid escape sequence #{next_char.inspect}" if next_char !~ /\A["\\]/
           output_string << next_char
         elsif char == '"'
-          return SH::String.new(output_string)
+          return StructuredFields::String.new(output_string)
         elsif char =~ /\A[\x00-\x1F\x7F]/
-          raise SH::ParseError, "parse_string: invalid character #{char.inspect}"
+          raise StructuredFields::ParseError, "parse_string: invalid character #{char.inspect}"
         else
           output_string << char
         end
       end
-      raise SH::ParseError, "parse_string: reached end of input_string without finding closing DQUOTE"
+      raise StructuredFields::ParseError, "parse_string: reached end of input_string without finding closing DQUOTE"
     end
 
     ##
@@ -269,14 +269,14 @@ module StructuredHeaders
     # modified to remove the parsed value.
     #
     def self::parse_token input_string
-      raise SH::ParseError, "parse_token: first character not ALPHA or * #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z*]/
-      output_string = SH::empty_string
+      raise StructuredFields::ParseError, "parse_token: first character not ALPHA or * #{input_string.slice(0).inspect}" if input_string !~ /\A[A-Za-z*]/
+      output_string = StructuredFields::empty_string
       while !input_string.empty?
-        return SH::Token.new(output_string) if input_string !~ %r{\A[!#$%&'*+.^_`|~0-9A-Za-z:/-]}
+        return StructuredFields::Token.new(output_string) if input_string !~ %r{\A[!#$%&'*+.^_`|~0-9A-Za-z:/-]}
         char = input_string.slice!(0)
         output_string << char
       end
-      SH::Token.new(output_string)
+      StructuredFields::Token.new(output_string)
     end
 
     #
@@ -304,14 +304,14 @@ module StructuredHeaders
     # input_string is modified to remove the parsed value.
     #
     def self::parse_byte_sequence input_string
-      raise SH::ParseError, "parse_byte_sequence: missing open ':'" if input_string.slice(0) != ':'
+      raise StructuredFields::ParseError, "parse_byte_sequence: missing open ':'" if input_string.slice(0) != ':'
       input_string.slice!(0)
-      raise SH::ParseError, "parse_byte_sequence: missing final ':'" unless (_idx = input_string.index(':'))
+      raise StructuredFields::ParseError, "parse_byte_sequence: missing final ':'" unless (_idx = input_string.index(':'))
       b64_content = input_string.slice!(0, _idx)
       input_string.slice!(0)
-      raise SH::ParseError, "parse_byte_sequence: non-base-64 characters in #{b64_content.inspect}" if b64_content !~ /\A[A-Za-z0-9+\/=]*\z/
+      raise StructuredFields::ParseError, "parse_byte_sequence: non-base-64 characters in #{b64_content.inspect}" if b64_content !~ /\A[A-Za-z0-9+\/=]*\z/
       binary_content = _base64_decode64(b64_content)
-      SH::ByteSequence.new(binary_content)
+      StructuredFields::ByteSequence.new(binary_content)
     end
 
     ##
@@ -319,17 +319,17 @@ module StructuredHeaders
     # modified to remove the parsed value.
     #
     def self::parse_boolean input_string
-      raise SH::ParseError, "parse_boolean: missing initial '?'" if input_string.slice(0) != '?'
+      raise StructuredFields::ParseError, "parse_boolean: missing initial '?'" if input_string.slice(0) != '?'
       input_string.slice!(0)
       if input_string.slice(0) == '1'
         input_string.slice!(0)
-        return SH::Boolean.new(true)
+        return StructuredFields::Boolean.new(true)
       end
       if input_string.slice(0) == '0'
         input_string.slice!(0)
-        return SH::Boolean.new(false)
+        return StructuredFields::Boolean.new(false)
       end
-      raise SH::ParseError, "parse_boolean: invalid boolean character #{input_string.slice(0).inspect}, expected '1' or '0'"
+      raise StructuredFields::ParseError, "parse_boolean: invalid boolean character #{input_string.slice(0).inspect}, expected '1' or '0'"
     end
   end
 
