@@ -13,6 +13,8 @@ require_relative 'structured-fields/boolean'
 require_relative 'structured-fields/byte-sequence'
 require_relative 'structured-fields/integer'
 require_relative 'structured-fields/decimal'
+require_relative 'structured-fields/date'
+require_relative 'structured-fields/displaystring'
 require_relative 'structured-fields/string'
 require_relative 'structured-fields/token'
 

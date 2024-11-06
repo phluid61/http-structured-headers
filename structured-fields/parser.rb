@@ -116,6 +116,7 @@ module StructuredFields
           parameters = parse_parameters(input_string)
           member = value.tap{|v| v.parameters = parameters }
         end
+        # 4/5:
         dictionary.set this_key, member
         _discard_leading_OWS(input_string)
         return dictionary if input_string.empty?
@@ -147,12 +148,16 @@ module StructuredFields
         parse_integer_or_decimal(input_string)
       when '"'
         parse_string(input_string)
+      when /\A[A-Za-z*]/
+        parse_token(input_string)
       when ':'
         parse_byte_sequence(input_string)
       when '?'
         parse_boolean(input_string)
-      when /\A[A-Za-z*]/
-        parse_token(input_string)
+      when '@'
+        parse_date(input_string)
+      when '%'
+        parse_display_string(input_string)
       else
         raise StructuredFields::ParseError, "parse_item: unknown item #{input_string.inspect}"
       end
@@ -175,6 +180,7 @@ module StructuredFields
           input_string.slice!(0)
           param_value = parse_bare_item(input_string)
         end
+        # 7/8:
         parameters.set param_name, param_value
       end
       parameters
@@ -229,12 +235,12 @@ module StructuredFields
       end
       if type == :integer
         output_number = StructuredFields::Integer.new(input_number.to_i(10) * sign)
-        raise StructuredFields::ParseError, "parse_integer_or_decimal: output_number #{output_number} too large" if output_number < -999_999_999_999_999 || output_number > 999_999_999_999_999
       else
         raise StructuredFields::ParseError, "parse_integer_or_decimal: trailing decimal point in #{input_number}" if input_number =~ /\.\z/
         raise StructuredFields::ParseError, "parse_integer_or_decimal: too many digits after decimal point in #{input_number}" if input_number =~ /\.\d{4}/
         output_number = StructuredFields::Decimal.new(input_number.to_f * sign)
       end
+      # 10. Let output_number be the product of output_number and sign ...
       output_number
     end
 
@@ -330,6 +336,45 @@ module StructuredFields
         return StructuredFields::Boolean.new(false)
       end
       raise StructuredFields::ParseError, "parse_boolean: invalid boolean character #{input_string.slice(0).inspect}, expected '1' or '0'"
+    end
+
+    ##
+    # Given an ASCII string as input_string, return a Date. input_string is
+    # modified to remove the parsed value.
+    #
+    def self.parse_date input_string
+      raise StructuredFields::ParseError, "parse_date: missing initial '@'" if input_string.slice(0) != '@'
+      input_string.slice!(0)
+      output_date = parse_integer_or_decimal(input_string)
+      raise StructuredFields::ParseError, "parse_date: date must be an integer" if output_date.is_a? StructuredFields::Decimal
+      StructuredFields::Date.new(output_date.int)
+    end
+
+    ##
+    # Given an ASCII string as input_string, return a sequence of Unicode
+    # code points. input_string is modified to remove the parsed value.
+    #
+    def self.parse_display_string input_string
+      raise StructuredFields::ParseError, "parse_display_string: missing initial '%'" if input_string.slice(0,2) != '%"'
+      input_string.slice!(0,2)
+      byte_array = []
+      while !input_string.empty?
+        char = input_string.slice!(0)
+        raise StructuredFields::ParseError, "parse_display_string: invalid byte 0x#{char.ord.to_s(16)}" if char =~ /^[\x00-\x1f\x7f-\xff]/n
+        if char == '%'
+          octet_hex = input_string.slice!(0,2)
+          raise StructuredFields::ParseError, "parse_display_string: unterminated display string" if octet_hex.length < 2
+          raise StructuredFields::ParseError, "parse_display_string: invalid hex-encoded octet %#{octet_hex}" unless octet_hex =~ /\A[\x30-\x39\x61-\x66]{2}$/n
+          octet = octet_hex.to_i(16)
+          byte_array << octet
+        elsif char == '"'
+          unicode_sequence = byte_array.pack('C*').force_encoding(Encoding::UTF_8)
+          return StructuredFields::DisplayString.new(unicode_sequence)
+        else
+          byte_array << char.ord
+        end
+        raise StructuredFields::ParseError, "parse_display_string: reached end of input_string without finding closing DQUOTE"
+      end
     end
   end
 

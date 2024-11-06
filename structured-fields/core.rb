@@ -1,6 +1,6 @@
 
 module StructuredFields
-  SPEC_VERSION = '-17'
+  SPEC_VERSION = 'RFC9651'
 
   class SerializationError < RuntimeError
   end
