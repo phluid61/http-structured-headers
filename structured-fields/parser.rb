@@ -373,8 +373,8 @@ module StructuredFields
         else
           byte_array << char.ord
         end
-        raise StructuredFields::ParseError, "parse_display_string: reached end of input_string without finding closing DQUOTE"
       end
+      raise StructuredFields::ParseError, "parse_display_string: reached end of input_string without finding closing DQUOTE"
     end
   end
 
