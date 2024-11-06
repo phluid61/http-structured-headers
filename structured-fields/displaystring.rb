@@ -13,7 +13,8 @@ module StructuredFields
     end
 
     def to_s
-      @string.dup
+      str = each_byte.map{|b| b == 0x25 || b == 0x22 || (b >= 0x00 && b <= 0x1f) || (b >= 0x7f && b <= 0xff) ? ('%%%02x' % b) : b.chr }
+      "%\"#{str}\""
     end
 
     def inpect
