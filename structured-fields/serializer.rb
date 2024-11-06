@@ -298,6 +298,8 @@ module StructuredFields
           encoded_string << byte.chr
         end
       end
+      encoded_string << DQUOTE
+      encoded_string
     end
   end
 
