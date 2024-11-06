@@ -46,6 +46,10 @@ def __cast__ result, ignore_parameters=false
     result.to_s.self {|v| {'__type'=>'token', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when StructuredFields::ByteSequence
     Base32.strict_encode32(result.string).self {|v| {'__type'=>'binary', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when StructuredFields::Date
+    result.to_i.self {|v| {'__type'=>'date', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
+  when StructuredFields::DisplayString
+    result.to_s.self {|v| {'__type'=>'displaystring', 'value'=>v} }.self {|v| ignore_parameters ? v : [v, __cast__(result.parameters)] }
   when StructuredFields::Key, Symbol
     result.to_s
 #  #when Date, DateTime, Time
