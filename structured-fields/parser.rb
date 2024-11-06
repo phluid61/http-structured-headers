@@ -369,6 +369,7 @@ module StructuredFields
           byte_array << octet
         elsif char == '"'
           unicode_sequence = byte_array.pack('C*').force_encoding(Encoding::UTF_8)
+          raise StructuredFields::ParseError, "parse_display_string: invalid UTF-8 sequence" unless unicode_sequence.valid_encoding?
           return StructuredFields::DisplayString.new(unicode_sequence)
         else
           byte_array << char.ord
